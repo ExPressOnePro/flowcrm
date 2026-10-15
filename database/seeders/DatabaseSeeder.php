@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             DemoSeeder::class,
             FleetDemoSeeder::class,
+            FleetDocumentsDemoSeeder::class,
         ]);
     }
 }

@@ -15,6 +15,7 @@ declare module '@inertiajs/core' {
             auth: Auth;
             organization: Organization | null;
             authPermissions: string[];
+            unreadNotifications: number;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

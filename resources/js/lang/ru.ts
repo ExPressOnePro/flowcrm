@@ -339,6 +339,120 @@ const ru: Record<string, string> = {
     'Nothing due today': 'На сегодня задач нет',
     "You're clear for now.": 'Пока всё сделано.',
     'Browse customers': 'Перейти к клиентам',
+    // Documents & notifications
+    'All current': 'Все действующие',
+    'Expiring in :days days': 'Истекают в течение :days дн.',
+    'Document type': 'Тип документа',
+    Sort: 'Сортировка',
+    'Vehicle documents and their expiry dates. Add documents from the vehicle card.':
+        'Документы транспорта и сроки их действия. Добавляйте документы из карточки ТС.',
+    Expiry: 'Срок',
+    'Search by plate or document number':
+        'Поиск по госномеру или номеру документа',
+    'Plate or number': 'Госномер или номер',
+    'Nothing found': 'Ничего не найдено',
+    'No documents yet': 'Документов пока нет',
+    'Open a vehicle card and add its documents on the Documents tab.':
+        'Откройте карточку ТС и добавьте документы на вкладке «Документы».',
+    'until :date': 'до :date',
+    Vehicle: 'ТС',
+    Document: 'Документ',
+    Number: 'Номер',
+    'Valid until': 'Действует до',
+    State: 'Состояние',
+    Files: 'Файлы',
+    'Found: :count': 'Найдено: :count',
+    'Edit document type': 'Тип документа',
+    'New document type': 'Новый тип документа',
+    'Applies to': 'Относится к',
+    'Has an expiry date': 'Есть срок действия',
+    'Cannot be changed while documents use this type.':
+        'Нельзя изменить, пока есть документы этого типа.',
+    'Reminders are sent 30, 14, 7 and 1 day before expiry.':
+        'Напоминания приходят за 30, 14, 7 и 1 день до окончания срока.',
+    Mandatory: 'Обязательный',
+    'A missing document is shown as a warning on the vehicle card.':
+        'Если документа нет, в карточке ТС появится предупреждение.',
+    'Inactive types cannot be chosen for new documents.':
+        'Неактивный тип нельзя выбрать для новых документов.',
+    'Vehicle categories': 'Категории ТС',
+    'None selected — applies to all categories.':
+        'Ничего не выбрано — для всех категорий.',
+    'With expiry': 'Со сроком',
+    'No expiry': 'Бессрочный',
+    'Document types': 'Типы документов',
+    'Which documents the company tracks and which are mandatory.':
+        'Какие документы учитывает компания и какие из них обязательны.',
+    'New type': 'Новый тип',
+    'Current documents: :count': 'Действующих документов: :count',
+    ':document expired on :date': ':document — срок истёк :date',
+    ':document expires today': ':document — срок истекает сегодня',
+    ':document expires on :date (in :days d.)':
+        ':document — срок до :date (через :days дн.)',
+    Notifications: 'Уведомления',
+    'Document expiry reminders.': 'Напоминания о сроках документов.',
+    'Mark all as read': 'Прочитать все',
+    'No notifications': 'Уведомлений нет',
+    'Reminders appear here 30, 14, 7 and 1 day before a document expires.':
+        'Здесь появятся напоминания за 30, 14, 7 и 1 день до окончания срока документа.',
+    Unread: 'Не прочитано',
+    'Notifications: :count unread': 'Уведомления: непрочитанных :count',
+    'Add document': 'Добавить документ',
+    'Renew document': 'Продлить документ',
+    'Edit document': 'Изменить документ',
+    'Discard changes?': 'Отменить изменения?',
+    'The entered data and selected files will be lost.':
+        'Введённые данные и выбранные файлы будут потеряны.',
+    Discard: 'Отменить',
+    Uploading: 'Загрузка',
+    Renew: 'Продлить',
+    'Select type': 'Выберите тип',
+    'A new document will be created; the current one moves to the archive with a link to the new one.':
+        'Будет создан новый документ, а текущий уйдёт в архив со ссылкой на новый.',
+    'Issued on': 'Дата выдачи',
+    'Issued by': 'Кем выдан',
+    'valid until :date': 'действует до :date',
+    Added: 'Добавлен',
+    'No files attached.': 'Файлы не приложены.',
+    'Download :name': 'Скачать :name',
+    Upload: 'Загрузить',
+    'The document becomes read-only and stays in the vehicle history. It cannot be deleted.':
+        'Документ станет доступен только для чтения и останется в истории ТС. Удалить его нельзя.',
+    'Move to archive': 'Перенести в архив',
+    'Add files': 'Добавить файлы',
+    'To archive': 'В архив',
+    'Expires today': 'Истекает сегодня',
+    'Expires in :days d.': 'Истекает через :days дн.',
+    'Expired :days d. ago': 'Просрочен :days дн. назад',
+    'Allowed formats: PDF, JPG, PNG, WEBP, HEIC.':
+        'Допустимые форматы: PDF, JPG, PNG, WEBP, HEIC.',
+    'Each file must be at most :size MB.': 'Каждый файл — не больше :size МБ.',
+    'No more than :count files at once.': 'Не больше :count файлов за раз.',
+    'Take photo': 'Сфотографировать',
+    'Choose files': 'Выбрать файлы',
+    'PDF or photo, up to :size MB each.': 'PDF или фото, до :size МБ каждый.',
+    'Remove :name': 'Убрать :name',
+    'Could not load documents': 'Не удалось загрузить документы',
+    'Check your connection and try again.':
+        'Проверьте подключение и попробуйте ещё раз.',
+    'Missing mandatory documents': 'Нет обязательных документов',
+    'Mandatory per company settings; not added yet':
+        'Обязателен по настройкам компании, ещё не добавлен',
+    Add: 'Добавить',
+    'Add insurance, inspection and other documents to get expiry reminders.':
+        'Добавьте страховку, техосмотр и другие документы, чтобы получать напоминания о сроках.',
+    'Archive (:count)': 'Архив (:count)',
+    'Documents expired': 'Просроченные документы',
+    'Documents expiring in :days days':
+        'Документы истекают в течение :days дн.',
+    'Open waybills will appear here after stage 5.':
+        'Открытые путевые листы появятся здесь после этапа 5.',
+    'Expired: :list': 'Просрочены: :list',
+    'Expiring soon: :list': 'Скоро истекают: :list',
+    today: 'сегодня',
+    'in :days d.': 'через :days дн.',
+    'Mandatory documents not added: :list':
+        'Не добавлены обязательные документы: :list',
 };
 
 export default ru;

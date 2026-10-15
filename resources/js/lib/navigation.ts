@@ -3,6 +3,7 @@ import {
     BarChart3,
     CheckSquare,
     ClipboardList,
+    FileCog,
     FileText,
     History,
     LayoutGrid,
@@ -17,6 +18,7 @@ import {
 import { analytics, dashboard } from '@/routes';
 import branches from '@/routes/branches';
 import customers from '@/routes/customers';
+import documentTypes from '@/routes/document-types';
 import documents from '@/routes/documents';
 import employees from '@/routes/employees';
 import maintenance from '@/routes/maintenance';
@@ -48,8 +50,7 @@ export const documentsItem: NavItem = {
     title: 'Documents',
     href: documents.index(),
     icon: FileText,
-    permission: 'vehicles.view',
-    stage: 4,
+    permission: 'documents.view',
 };
 
 export const waybillsItem: NavItem = {
@@ -134,6 +135,12 @@ export const navGroups: NavGroup[] = [
                 href: vehicleTypes.index(),
                 icon: Shapes,
                 permission: 'vehicle_types.manage',
+            },
+            {
+                title: 'Document types',
+                href: documentTypes.index(),
+                icon: FileCog,
+                permission: 'document_types.manage',
             },
         ],
     },

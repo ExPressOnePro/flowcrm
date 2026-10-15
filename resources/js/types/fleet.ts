@@ -82,6 +82,10 @@ export type VehicleCan = {
     record_odometer: boolean;
     archive: boolean;
     view_audit: boolean;
+    view_documents: boolean;
+    create_document: boolean;
+    update_document: boolean;
+    archive_document: boolean;
 };
 
 export type VehicleOptions = {

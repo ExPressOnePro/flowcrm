@@ -19,6 +19,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 import { useConfirm } from '@/components/confirm-dialog';
+import { VehicleDocuments } from '@/components/documents/vehicle-documents';
 import {
     CoupleSheet,
     OdometerSheet,
@@ -37,6 +38,7 @@ import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import vehicles from '@/routes/vehicles';
+import type { DocumentSummary } from '@/types/documents';
 import type {
     ActiveCoupling,
     CouplingCandidate,
@@ -52,6 +54,7 @@ type Props = {
     staleOdometerDays: number;
     couplingCandidates: CouplingCandidate[];
     statuses: string[];
+    documentSummary: DocumentSummary | null;
     can: VehicleCan;
 };
 
@@ -113,7 +116,11 @@ export default function VehiclesShow(props: Props) {
         }
     }, [tab]);
 
-    const tabs = TABS.filter((key) => key !== 'log' || can.view_audit);
+    const tabs = TABS.filter(
+        (key) =>
+            (key !== 'log' || can.view_audit) &&
+            (key !== 'documents' || can.view_documents),
+    );
 
     function selectTab(next: Tab) {
         setTab(next);
@@ -245,7 +252,11 @@ export default function VehiclesShow(props: Props) {
                     )}
                 </header>
 
-                <Warnings {...props} onRecord={() => setAction('odometer')} />
+                <Warnings
+                    {...props}
+                    onRecord={() => setAction('odometer')}
+                    onDocuments={() => selectTab('documents')}
+                />
 
                 {quickActions.length > 0 && (
                     <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
@@ -316,8 +327,20 @@ export default function VehiclesShow(props: Props) {
                             onArchive={archive}
                         />
                     )}
-                    {tab === 'documents' && (
-                        <ComingSoon icon={FileText} stage={4} />
+                    {tab === 'documents' && can.view_documents && (
+                        <VehicleDocuments
+                            vehicleId={vehicle.id}
+                            vehicleArchived={vehicle.archived}
+                            can={{
+                                create: can.create_document,
+                                renew:
+                                    can.create_document && can.archive_document,
+                                update: can.update_document,
+                                archive: can.archive_document,
+                                attach:
+                                    can.create_document || can.update_document,
+                            }}
+                        />
                     )}
                     {tab === 'waybills' && (
                         <ComingSoon icon={ClipboardList} stage={5} />
@@ -383,8 +406,10 @@ function Warnings({
     can,
     staleOdometerDays,
     lastReading,
+    documentSummary,
     onRecord,
-}: Props & { onRecord: () => void }) {
+    onDocuments,
+}: Props & { onRecord: () => void; onDocuments: () => void }) {
     const { t } = useT();
     const format = useFormat();
     const items: {
@@ -429,6 +454,68 @@ function Warnings({
                   })
                 : t('Decommissioned'),
         });
+    }
+
+    if (
+        documentSummary &&
+        !vehicle.archived &&
+        vehicle.status !== 'decommissioned'
+    ) {
+        const open = (
+            <Button size="sm" variant="outline" onClick={onDocuments}>
+                <FileText />
+                {t('Documents')}
+            </Button>
+        );
+
+        if (documentSummary.expired.length > 0) {
+            items.push({
+                key: 'documents-expired',
+                tone: 'danger',
+                text: t('Expired: :list', {
+                    list: documentSummary.expired
+                        .map(
+                            (item) =>
+                                `${item.name} (${format.date(item.expires_on)})`,
+                        )
+                        .join(', '),
+                }),
+                action: open,
+            });
+        }
+
+        if (documentSummary.expiring.length > 0) {
+            items.push({
+                key: 'documents-expiring',
+                tone: 'warn',
+                text: t('Expiring soon: :list', {
+                    list: documentSummary.expiring
+                        .map((item) =>
+                            item.days_left === 0
+                                ? `${item.name} — ${t('today')}`
+                                : `${item.name} — ${t('in :days d.', { days: item.days_left ?? 0 })}`,
+                        )
+                        .join(', '),
+                }),
+                action: documentSummary.expired.length > 0 ? undefined : open,
+            });
+        }
+
+        if (documentSummary.missing.length > 0) {
+            items.push({
+                key: 'documents-missing',
+                tone: 'warn',
+                text: t('Mandatory documents not added: :list', {
+                    list: documentSummary.missing.join(', '),
+                }),
+                action:
+                    documentSummary.expired.length +
+                        documentSummary.expiring.length >
+                    0
+                        ? undefined
+                        : open,
+            });
+        }
     }
 
     if (vehicle.odometer_stale && !vehicle.archived) {

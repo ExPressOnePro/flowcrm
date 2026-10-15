@@ -1,4 +1,5 @@
 import InputError from '@/components/input-error';
+import { identifierProps, selectClass } from '@/components/sheet-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,17 +33,6 @@ type Props = {
     statuses?: string[];
     isCreate?: boolean;
 };
-
-const selectClass =
-    'border-input bg-background h-9 w-full rounded-md border px-3 text-sm shadow-xs';
-
-/** Plate numbers and VINs: capital letters, no autocorrect or spellcheck. */
-const identifierProps = {
-    autoCapitalize: 'characters',
-    autoCorrect: 'off',
-    spellCheck: false,
-    autoComplete: 'off',
-} as const;
 
 function RequiredLabel({
     htmlFor,

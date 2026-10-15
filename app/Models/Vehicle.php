@@ -210,6 +210,11 @@ class Vehicle extends Model
         return $this->towedCouplings()->whereNull('uncoupled_at');
     }
 
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable');
+    }
+
     public function tasks(): MorphMany
     {
         return $this->morphMany(Task::class, 'taskable');

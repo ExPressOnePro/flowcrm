@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { ChevronLeft } from 'lucide-react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import { NotificationBell } from '@/components/notification-bell';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useT } from '@/lib/i18n';
 import { canGoBackInApp } from '@/lib/in-app-history';
@@ -38,14 +39,16 @@ export function AppSidebarHeader({
                 ) : (
                     <span className="w-2" />
                 )}
-                <p className="min-w-0 truncate text-base font-semibold">
+                <p className="min-w-0 flex-1 truncate text-base font-semibold">
                     {current ? t(current.title) : ''}
                 </p>
+                <NotificationBell />
             </div>
 
-            <div className="hidden items-center gap-2 md:flex">
+            <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex">
                 <SidebarTrigger className="-ml-1" />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
+                <NotificationBell className="ml-auto" />
             </div>
         </header>
     );

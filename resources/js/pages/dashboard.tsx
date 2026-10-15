@@ -5,6 +5,8 @@ import {
     BarChart3,
     CheckSquare2,
     ChevronRight,
+    FileClock,
+    FileWarning,
     Gauge,
     Link2,
     Plus,
@@ -18,6 +20,7 @@ import { useFormat } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { analytics, dashboard } from '@/routes';
+import documentRoutes from '@/routes/documents';
 import tasks from '@/routes/tasks';
 import vehicles from '@/routes/vehicles';
 
@@ -33,7 +36,8 @@ type AttentionItem = {
     plate_number: string;
     name: string;
     status: string;
-    reason: 'under_repair' | 'stale_odometer';
+    reason: 'under_repair' | 'stale_odometer' | 'document_expired';
+    document?: string;
     since: string | null;
 };
 
@@ -48,6 +52,8 @@ type TaskItem = {
 
 type Props = {
     fleet: Fleet | null;
+    documents: { expired: number; expiring: number } | null;
+    expiringDays: number;
     attention: AttentionItem[];
     tasks: TaskItem[];
     staleOdometerDays: number;
@@ -60,6 +66,8 @@ type Props = {
 
 export default function Dashboard({
     fleet,
+    documents,
+    expiringDays,
     attention,
     tasks: myTasks,
     staleOdometerDays,
@@ -162,6 +170,41 @@ export default function Dashboard({
                                         : undefined
                                 }
                             />
+                            {documents && (
+                                <>
+                                    <Kpi
+                                        label={t('Documents expired')}
+                                        value={documents.expired}
+                                        icon={FileWarning}
+                                        href={documentRoutes.index({
+                                            query: { state: 'expired' },
+                                        })}
+                                        tone={
+                                            documents.expired > 0
+                                                ? 'danger'
+                                                : undefined
+                                        }
+                                    />
+                                    <Kpi
+                                        label={t(
+                                            'Documents expiring in :days days',
+                                            {
+                                                days: expiringDays,
+                                            },
+                                        )}
+                                        value={documents.expiring}
+                                        icon={FileClock}
+                                        href={documentRoutes.index({
+                                            query: { state: 'expiring' },
+                                        })}
+                                        tone={
+                                            documents.expiring > 0
+                                                ? 'warn'
+                                                : undefined
+                                        }
+                                    />
+                                </>
+                            )}
                             <Kpi
                                 label={t('Decommissioned')}
                                 value={fleet.by_status.decommissioned ?? 0}
@@ -172,14 +215,12 @@ export default function Dashboard({
                             />
                         </div>
                         <p className="mt-3 text-xs text-muted-foreground">
-                            {t(
-                                'Expiring documents and open waybills will appear here after stages 4 and 5.',
-                            )}
+                            {t('Open waybills will appear here after stage 5.')}
                         </p>
                     </section>
                 )}
 
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     {fleet && (
                         <section className="rounded-xl border">
                             <SectionHeader
@@ -245,7 +286,7 @@ function Kpi({
     value: number;
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon;
-    tone?: 'good' | 'warn';
+    tone?: 'good' | 'warn' | 'danger';
     muted?: boolean;
 }) {
     const format = useFormat();
@@ -258,6 +299,8 @@ function Kpi({
                 'group flex min-h-24 flex-col justify-between gap-2 rounded-xl border p-3 transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none md:p-4',
                 tone === 'warn' &&
                     'border-amber-300 bg-amber-50/60 dark:border-amber-900 dark:bg-amber-950/30',
+                tone === 'danger' &&
+                    'border-rose-300 bg-rose-50/60 dark:border-rose-900 dark:bg-rose-950/30',
                 muted && 'text-muted-foreground',
             )}
         >
@@ -276,6 +319,7 @@ function Kpi({
                         tone === 'good' &&
                             'text-emerald-700 dark:text-emerald-400',
                         tone === 'warn' && 'text-amber-700 dark:text-amber-400',
+                        tone === 'danger' && 'text-rose-700 dark:text-rose-400',
                     )}
                 >
                     {format.number(value)}
@@ -326,21 +370,30 @@ function AttentionRow({
     const format = useFormat();
 
     const reason =
-        item.reason === 'under_repair'
-            ? item.since
-                ? t('Under repair since :date', {
+        item.reason === 'document_expired'
+            ? t(':document expired on :date', {
+                  document: item.document ?? '',
+                  date: format.date(item.since),
+              })
+            : item.reason === 'under_repair'
+              ? item.since
+                  ? t('Under repair since :date', {
+                        date: format.dayOf(item.since),
+                    })
+                  : t('Under repair')
+              : item.since
+                ? t('Last odometer reading :date', {
                       date: format.dayOf(item.since),
                   })
-                : t('Under repair')
-            : item.since
-              ? t('Last odometer reading :date', {
-                    date: format.dayOf(item.since),
-                })
-              : t('No odometer readings for :days days', { days: staleDays });
+                : t('No odometer readings for :days days', { days: staleDays });
 
     return (
         <Link
-            href={vehicles.show(item.id)}
+            href={
+                item.reason === 'document_expired'
+                    ? vehicles.show(item.id, { query: { tab: 'documents' } })
+                    : vehicles.show(item.id)
+            }
             className="flex min-h-14 items-center gap-3 px-4 py-2.5 hover:bg-muted/40"
         >
             <div className="min-w-0 flex-1">
@@ -352,7 +405,14 @@ function AttentionRow({
                         {item.name}
                     </span>
                 </div>
-                <div className="text-xs text-amber-700 dark:text-amber-400">
+                <div
+                    className={cn(
+                        'text-xs',
+                        item.reason === 'document_expired'
+                            ? 'text-rose-700 dark:text-rose-400'
+                            : 'text-amber-700 dark:text-amber-400',
+                    )}
+                >
                     {reason}
                 </div>
             </div>

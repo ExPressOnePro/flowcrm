@@ -76,6 +76,13 @@ class RolesAndPermissionsSeeder extends Seeder
         'branches.manage',
         'vehicle_types.manage',
 
+        'documents.view',
+        'documents.create',
+        'documents.update',
+        'documents.archive',
+        'documents.notify',
+        'document_types.manage',
+
         'audit.view',
     ];
 

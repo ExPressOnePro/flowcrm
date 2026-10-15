@@ -51,6 +51,30 @@ const ru: EnumLabels = {
         individual: 'Физлицо',
         company: 'Компания',
     },
+    document_state: {
+        valid: 'Действует',
+        expiring: 'Истекает',
+        expired: 'Просрочен',
+        no_expiry: 'Бессрочный',
+        archived: 'В архиве',
+    },
+    document_filter: {
+        valid: 'Действующие',
+        expiring: 'Истекающие',
+        expired: 'Просроченные',
+        no_expiry: 'Бессрочные',
+        archived: 'Архив',
+    },
+    document_subject: {
+        vehicle: 'Транспорт',
+        driver: 'Водители',
+    },
+    document_sort: {
+        expires: 'Сначала истекающие',
+        '-expires': 'Сначала поздние сроки',
+        plate: 'По госномеру',
+        type: 'По типу документа',
+    },
 };
 
 const en: EnumLabels = {
@@ -103,6 +127,30 @@ const en: EnumLabels = {
     customer_type: {
         individual: 'Individual',
         company: 'Company',
+    },
+    document_state: {
+        valid: 'Valid',
+        expiring: 'Expiring',
+        expired: 'Expired',
+        no_expiry: 'No expiry',
+        archived: 'Archived',
+    },
+    document_filter: {
+        valid: 'Valid',
+        expiring: 'Expiring',
+        expired: 'Expired',
+        no_expiry: 'No expiry',
+        archived: 'Archive',
+    },
+    document_subject: {
+        vehicle: 'Vehicles',
+        driver: 'Drivers',
+    },
+    document_sort: {
+        expires: 'Expiring first',
+        '-expires': 'Latest expiry first',
+        plate: 'By plate number',
+        type: 'By document type',
     },
 };
 

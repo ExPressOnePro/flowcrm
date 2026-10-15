@@ -11,12 +11,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Fleet\StoreVehicleRequest;
 use App\Http\Requests\Fleet\UpdateVehicleRequest;
 use App\Models\Branch;
+use App\Models\Document;
 use App\Models\OdometerReading;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleCoupling;
 use App\Models\VehicleStatusChange;
 use App\Models\VehicleType;
+use App\Services\VehicleDocuments;
 use App\Services\VehicleTimeline;
 use App\Support\BranchAccess;
 use App\Support\CurrentOrganization;
@@ -138,7 +140,7 @@ class VehicleController extends Controller
         return to_route('vehicles.show', $vehicle);
     }
 
-    public function show(Request $request, Vehicle $vehicle): Response
+    public function show(Request $request, Vehicle $vehicle, VehicleDocuments $vehicleDocuments): Response
     {
         Gate::authorize('view', $vehicle);
 
@@ -174,6 +176,7 @@ class VehicleController extends Controller
             ->value('changed_at');
 
         $canCouple = Gate::allows('couple', $vehicle) && ! $vehicle->trashed();
+        $canViewDocuments = Gate::allows('viewAny', Document::class);
 
         return Inertia::render('fleet/vehicles/show', [
             'vehicle' => [
@@ -212,6 +215,7 @@ class VehicleController extends Controller
                 'recorded_by' => $lastReading->recordedBy?->name,
             ] : null,
             'staleOdometerDays' => Vehicle::STALE_ODOMETER_DAYS,
+            'documentSummary' => $canViewDocuments ? $vehicleDocuments->summary($vehicle) : null,
             'couplingCandidates' => $canCouple && $vehicle->type->can_tow ? $this->couplingCandidates($request->user()) : [],
             'statuses' => collect(VehicleStatus::cases())->map->value,
             'can' => [
@@ -221,6 +225,10 @@ class VehicleController extends Controller
                 'record_odometer' => Gate::allows('recordOdometer', $vehicle) && ! $vehicle->trashed() && $vehicle->type->has_odometer,
                 'archive' => Gate::allows('delete', $vehicle),
                 'view_audit' => Gate::allows('viewAudit', $vehicle),
+                'view_documents' => $canViewDocuments,
+                'create_document' => Gate::allows('create', [Document::class, $vehicle]),
+                'update_document' => $request->user()->can('documents.update'),
+                'archive_document' => $request->user()->can('documents.archive'),
             ],
         ]);
     }

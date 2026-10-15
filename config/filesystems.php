@@ -38,6 +38,16 @@ return [
             'report' => false,
         ],
 
+        // Vehicle and driver documents: never public, served only through an authorized controller.
+        'documents' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/documents'),
+            'visibility' => 'private',
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

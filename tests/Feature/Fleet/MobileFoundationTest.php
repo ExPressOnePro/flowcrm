@@ -331,11 +331,14 @@ class MobileFoundationTest extends TestCase
         $this->actingAs($this->owner)
             ->get(route('documents.index'))
             ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('documents/index'));
+
+        $this->actingAs($this->owner)
+            ->get(route('waybills.index'))
+            ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('placeholders/module')
-                ->where('stage', 4));
-
-        $this->actingAs($this->owner)->get(route('waybills.index'))->assertOk();
+                ->where('stage', 5));
 
         $employee = addOrganizationMember($this->organization, 'Employee');
         $this->actingAs($employee)->get(route('documents.index'))->assertForbidden();

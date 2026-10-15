@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Document;
 use App\Models\Vehicle;
 use App\Services\FleetDashboardService;
 use Illuminate\Http\Request;
@@ -18,10 +19,13 @@ class DashboardController extends Controller
         abort_unless($user?->can('dashboard.view'), 403);
 
         $canViewFleet = Gate::allows('viewAny', Vehicle::class);
+        $canViewDocuments = $canViewFleet && Gate::allows('viewAny', Document::class);
 
         return Inertia::render('dashboard', [
             'fleet' => $canViewFleet ? $dashboard->fleet($user) : null,
-            'attention' => $canViewFleet ? $dashboard->attention($user) : [],
+            'documents' => $canViewDocuments ? $dashboard->documents($user) : null,
+            'attention' => $canViewFleet ? $dashboard->attention($user, $canViewDocuments) : [],
+            'expiringDays' => Document::EXPIRING_DAYS,
             'tasks' => $user->can('tasks.view') ? $dashboard->myTasks($user) : [],
             'staleOdometerDays' => Vehicle::STALE_ODOMETER_DAYS,
             'can' => [

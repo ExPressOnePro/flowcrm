@@ -2,13 +2,16 @@
 
 namespace App\Services;
 
+use App\Enums\DocumentState;
 use App\Enums\TaskStatus;
 use App\Enums\VehicleStatus;
+use App\Models\Document;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleCoupling;
 use App\Models\VehicleStatusChange;
+use App\Support\OrganizationTime;
 use Illuminate\Support\Carbon;
 
 class FleetDashboardService
@@ -44,12 +47,49 @@ class FleetDashboardService
     }
 
     /**
-     * Vehicles that need a decision: under repair, or without a recent odometer reading.
+     * @return array{expired: int, expiring: int}
+     */
+    public function documents(User $user): array
+    {
+        $today = OrganizationTime::today();
+        $count = fn (DocumentState $state) => Document::query()
+            ->visibleTo($user)
+            ->forOperationalSubjects()
+            ->inState($state, $today)
+            ->count();
+
+        return [
+            'expired' => $count(DocumentState::Expired),
+            'expiring' => $count(DocumentState::Expiring),
+        ];
+    }
+
+    /**
+     * Vehicles that need a decision: expired documents, under repair, or without a recent odometer reading.
      *
      * @return list<array<string, mixed>>
      */
-    public function attention(User $user): array
+    public function attention(User $user, bool $withDocuments = false): array
     {
+        $expiredDocuments = $withDocuments
+            ? Document::query()
+                ->visibleTo($user)
+                ->forOperationalSubjects()
+                ->inState(DocumentState::Expired, OrganizationTime::today())
+                ->with(['type:id,name', 'documentable' => fn ($query) => $query->select('id', 'plate_number', 'make', 'model', 'status')])
+                ->orderBy('expires_on')
+                ->limit(self::ATTENTION_LIMIT)
+                ->get()
+                ->filter(fn (Document $document) => $document->documentable instanceof Vehicle)
+                ->map(fn (Document $document) => [
+                    ...$this->vehicle($document->documentable),
+                    'reason' => 'document_expired',
+                    'document' => $document->type->name,
+                    'since' => $document->expires_on?->toDateString(),
+                ])
+                ->values()
+            : collect();
+
         $underRepair = Vehicle::query()
             ->visibleTo($user)
             ->where('status', VehicleStatus::UnderRepair->value)
@@ -86,7 +126,7 @@ class FleetDashboardService
                     : null,
             ]);
 
-        return $underRepair->concat($stale)->values()->all();
+        return $expiredDocuments->concat($underRepair)->concat($stale)->values()->all();
     }
 
     /**

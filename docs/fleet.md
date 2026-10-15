@@ -52,16 +52,16 @@
 Права: `vehicles.view|create|update|change_status|archive|couple`, `odometer.record`,
 `fleet.view_all_branches`, `branches.manage`, `vehicle_types.manage`, `audit.view`,
 `analytics.view` (коммерческая аналитика `/analytics`; главная `/dashboard` — сводка
-по автопарку).
+по автопарку), `documents.view|create|update|archive|notify`, `document_types.manage`.
 
 | Роль | Кратко |
 |---|---|
 | Owner, Admin | Всё. |
-| Fleet Manager | Весь автопарк, справочники, журнал изменений, задачи. |
-| Dispatcher | Просмотр всех филиалов, статусы, сцепки, пробег. |
-| Document Controller | Просмотр всех филиалов (права на документы — этап 4). |
-| Branch Employee | Только свой филиал: просмотр и ввод пробега. |
-| Viewer | Только просмотр, включая журнал изменений. |
+| Fleet Manager | Весь автопарк, справочники, документы, журнал изменений, задачи. |
+| Dispatcher | Просмотр всех филиалов, статусы, сцепки, пробег; просмотр документов. |
+| Document Controller | Просмотр всех филиалов; документы и их типы, напоминания о сроках. |
+| Branch Employee | Только свой филиал: просмотр, ввод пробега, добавление и правка документов. |
+| Viewer | Только просмотр, включая документы и журнал изменений. |
 
 Без `fleet.view_all_branches` пользователь видит только ТС своего филиала
 (`App\Support\BranchAccess`); если филиал не назначен — не видит ничего.
@@ -84,10 +84,55 @@
 | `GET /vehicles/{id}/timeline?type=&period=&before=` | `view` на ТС | `{items, has_more, next_before}` — статусы, сцепки/расцепки, пробег (`App\Services\VehicleTimeline`), по 30 событий. `type`: `all`/`status`/`coupling`/`odometer`; `period`: `7d`/`30d`/`90d`/`365d`/`all`. |
 | `GET /vehicles/{id}/activity?before_id=` | `viewAudit` | `{items, has_more, next_before_id}` — журнал изменений, по 30 записей. |
 
+## Документы (этап 4)
+
+Таблицы: `document_types` (справочник: `subject` — `vehicle`/`driver`, `has_expiry`,
+`is_mandatory`, `vehicle_categories` — пусто значит «все категории»), `documents`
+(полиморфная связь `documentable`, сейчас только ТС), `document_files`,
+`document_alerts` (отметки об отправленных напоминаниях), `notifications`
+(стандартная таблица Laravel + `organization_id`).
+
+- Состояние вычисляется по дате, не хранится: `valid`, `expiring` (≤ 30 дней,
+  `Document::EXPIRING_DAYS`), `expired`, `no_expiry`, `archived`. Даты считаются
+  в часовом поясе организации.
+- Удаления нет ни в маршрутах, ни в политике. Архивирование — с обязательной причиной;
+  архивный документ только для чтения. «Продлить» создаёт новый документ, а старый
+  уходит в архив со ссылкой `replaced_by_id`.
+- Тип должен подходить категории ТС; у используемого типа нельзя сменить
+  `has_expiry`, а `subject` после создания не меняется.
+- Повторная отправка формы с тем же `idempotency_key` возвращает уже созданный документ.
+- Файлы: диск `documents` (`storage/app/private/documents`, не публичный), имя —
+  случайный UUID, расширение — по содержимому. Разрешены PDF, JPG, PNG, WEBP, HEIC
+  до 10 МБ, до 10 файлов за раз. Скачивание только через
+  `GET /documents/{id}/files/{file}` с проверкой прав и филиала, заголовки
+  `Cache-Control: private, no-store` и `nosniff`.
+- Реестр `GET /documents`: `state`, `type`, `branch`, `search` (госномер или номер
+  документа), `sort` (`expires`, `-expires`, `plate`, `type`). Счётчики и фильтры
+  «истекает»/«просрочен», KPI на главной и блок «Требует внимания» не учитывают
+  списанные ТС. Вкладка в карточке ТС грузится через
+  `GET /vehicles/{id}/documents` (`?archived=1` — архив) и показывает обязательные
+  документы, которых нет.
+
+### Напоминания о сроках
+
+`php artisan documents:notify-expiring` (в планировщике — каждый час,
+`withoutOverlapping`). Работает только после 07:00 по времени организации
+(`--now` — без этой проверки). Пороги — 30, 14, 7, 1 день и «истёк»
+(`DocumentAlert::THRESHOLDS`). Для каждого документа и порога в `document_alerts`
+пишется одна строка с уникальным ключом, поэтому повторный запуск ничего не
+отправляет. Если документ сразу попал в несколько порогов, уходит одно напоминание
+о самом срочном. Изменение даты окончания сбрасывает отметки.
+
+Получатели — активные участники с правом `documents.notify`, которым виден филиал ТС.
+Каждый получает уведомление в приложении (колокольчик в шапке, `/notifications`)
+и одно письмо-сводку за запуск. Нужны cron `* * * * * php artisan schedule:run`
+и настроенный `MAIL_MAILER` (локально — `log`). Push-уведомлений нет.
+
 ## Журнал изменений
 
 Spatie Activity Log, лог `fleet`: изменения `vehicles`, `vehicle_couplings`,
-`branches`, `vehicle_types`. Типы субъектов хранятся как алиасы morph map
+`branches`, `vehicle_types`; лог `documents`: типы документов, документы, файлы.
+Типы субъектов хранятся как алиасы morph map
 (`vehicle`, `vehicle_coupling`, …), см. `AppServiceProvider::MORPH_MAP`.
 
 ## Команды
@@ -96,6 +141,8 @@ Spatie Activity Log, лог `fleet`: изменения `vehicles`, `vehicle_cou
 php artisan migrate               # без --fresh; данные сохраняются
 php artisan roles:sync            # права, роли и справочники для всех организаций (идемпотентно)
 php artisan db:seed --class=FleetDemoSeeder   # демо-автопарк (пропускается, если ТС уже есть)
+php artisan db:seed --class=FleetDocumentsDemoSeeder   # демо-документы (пропускается, если документы уже есть)
+php artisan documents:notify-expiring --now   # разослать напоминания сейчас
 php artisan test tests/Feature/Fleet
 ```
 

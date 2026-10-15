@@ -6,6 +6,9 @@ use App\Models\Branch;
 use App\Models\Contact;
 use App\Models\Customer;
 use App\Models\Deal;
+use App\Models\Document;
+use App\Models\DocumentFile;
+use App\Models\DocumentType;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Lead;
@@ -77,6 +80,9 @@ class AppServiceProvider extends ServiceProvider
         'vehicle_coupling' => VehicleCoupling::class,
         'vehicle_status_change' => VehicleStatusChange::class,
         'odometer_reading' => OdometerReading::class,
+        'document_type' => DocumentType::class,
+        'document' => Document::class,
+        'document_file' => DocumentFile::class,
         'role' => Role::class,
         'permission' => Permission::class,
     ];
