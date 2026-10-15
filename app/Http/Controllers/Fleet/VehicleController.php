@@ -18,7 +18,8 @@ use App\Models\Vehicle;
 use App\Models\VehicleCoupling;
 use App\Models\VehicleStatusChange;
 use App\Models\VehicleType;
-use App\Services\VehicleDocuments;
+use App\Models\Waybill;
+use App\Services\SubjectDocuments;
 use App\Services\VehicleTimeline;
 use App\Support\BranchAccess;
 use App\Support\CurrentOrganization;
@@ -140,7 +141,7 @@ class VehicleController extends Controller
         return to_route('vehicles.show', $vehicle);
     }
 
-    public function show(Request $request, Vehicle $vehicle, VehicleDocuments $vehicleDocuments): Response
+    public function show(Request $request, Vehicle $vehicle, SubjectDocuments $vehicleDocuments): Response
     {
         Gate::authorize('view', $vehicle);
 
@@ -177,6 +178,7 @@ class VehicleController extends Controller
 
         $canCouple = Gate::allows('couple', $vehicle) && ! $vehicle->trashed();
         $canViewDocuments = Gate::allows('viewAny', Document::class);
+        $canViewWaybills = Gate::allows('viewAny', Waybill::class);
 
         return Inertia::render('fleet/vehicles/show', [
             'vehicle' => [
@@ -216,6 +218,7 @@ class VehicleController extends Controller
             ] : null,
             'staleOdometerDays' => Vehicle::STALE_ODOMETER_DAYS,
             'documentSummary' => $canViewDocuments ? $vehicleDocuments->summary($vehicle) : null,
+            'openWaybill' => $canViewWaybills ? $this->openWaybill($vehicle) : null,
             'couplingCandidates' => $canCouple && $vehicle->type->can_tow ? $this->couplingCandidates($request->user()) : [],
             'statuses' => collect(VehicleStatus::cases())->map->value,
             'can' => [
@@ -229,8 +232,33 @@ class VehicleController extends Controller
                 'create_document' => Gate::allows('create', [Document::class, $vehicle]),
                 'update_document' => $request->user()->can('documents.update'),
                 'archive_document' => $request->user()->can('documents.archive'),
+                'view_waybills' => $canViewWaybills,
+                'create_waybill' => Gate::allows('create', Waybill::class)
+                    && ! $vehicle->trashed()
+                    && $vehicle->status !== VehicleStatus::Decommissioned
+                    && ! $vehicle->type->is_towable,
             ],
         ]);
+    }
+
+    /**
+     * @return array{id: int, number: string|null, driver: string, departure_at: string|null, overdue: bool}|null
+     */
+    private function openWaybill(Vehicle $vehicle): ?array
+    {
+        $waybill = Waybill::query()
+            ->open()
+            ->where(fn ($query) => $query->where('vehicle_id', $vehicle->id)->orWhere('trailer_id', $vehicle->id))
+            ->with('driver:id,last_name,first_name,middle_name')
+            ->first();
+
+        return $waybill ? [
+            'id' => $waybill->id,
+            'number' => $waybill->number,
+            'driver' => $waybill->driver->full_name,
+            'departure_at' => $waybill->departure_at?->toIso8601String(),
+            'overdue' => $waybill->isReturnOverdue(),
+        ] : null;
     }
 
     public function timeline(Request $request, Vehicle $vehicle, VehicleTimeline $timeline): JsonResponse

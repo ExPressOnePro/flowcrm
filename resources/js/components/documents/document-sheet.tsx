@@ -263,7 +263,7 @@ export function DocumentSheet({
                         >
                             <p className="text-sm">
                                 {t(
-                                    'The document becomes read-only and stays in the vehicle history. It cannot be deleted.',
+                                    'The document becomes read-only and stays in the history. It cannot be deleted.',
                                 )}
                             </p>
                             <Field

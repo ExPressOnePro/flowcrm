@@ -14,6 +14,8 @@ import type { Paginated } from '@/types/fleet';
 type DocumentExpiringData = {
     document_type: string;
     plate_number: string | null;
+    subject?: 'vehicle' | 'driver';
+    subject_label?: string | null;
     expires_on: string | null;
     days_left: number;
     url: string;
@@ -118,13 +120,23 @@ export default function NotificationsIndex({
                                         />
                                         <div className="min-w-0 flex-1">
                                             <div className="text-sm">
-                                                {notification.data
-                                                    .plate_number && (
-                                                    <span className="mr-1.5 font-mono font-semibold">
-                                                        {
+                                                {(notification.data
+                                                    .subject_label ??
+                                                    notification.data
+                                                        .plate_number) && (
+                                                    <span
+                                                        className={cn(
+                                                            'mr-1.5 font-semibold',
                                                             notification.data
-                                                                .plate_number
-                                                        }
+                                                                .subject !==
+                                                                'driver' &&
+                                                                'font-mono',
+                                                        )}
+                                                    >
+                                                        {notification.data
+                                                            .subject_label ??
+                                                            notification.data
+                                                                .plate_number}
                                                     </span>
                                                 )}
                                                 {describe(notification.data)}

@@ -9,12 +9,13 @@ use Illuminate\Notifications\Notification;
 
 /**
  * One e-mail per user per scheduler run listing the reminders created in that run.
- * Contains document type, plate and date only — no files or personal data.
+ * Contains document type, plate and date only — no files or personal data;
+ * driver documents are listed without the driver's name.
  */
 class DocumentExpiryDigest extends Notification
 {
     /**
-     * @param  list<array{document_type: string, plate_number: string|null, expires_on: string|null, days_left: int}>  $items
+     * @param  list<array{document_type: string, subject?: string|null, plate_number: string|null, expires_on: string|null, days_left: int}>  $items
      */
     public function __construct(
         private Organization $organization,
@@ -46,12 +47,13 @@ class DocumentExpiryDigest extends Notification
     }
 
     /**
-     * @param  array{document_type: string, plate_number: string|null, expires_on: string|null, days_left: int}  $item
+     * @param  array{document_type: string, subject?: string|null, plate_number: string|null, expires_on: string|null, days_left: int}  $item
      */
     public static function describe(array $item): string
     {
         $date = $item['expires_on'] ? CarbonImmutable::parse($item['expires_on'])->format('d.m.Y') : '';
-        $subject = trim(($item['plate_number'] ?? '').' — '.$item['document_type'], ' —');
+        $owner = ($item['subject'] ?? null) === 'driver' ? __('Driver') : ($item['plate_number'] ?? '');
+        $subject = trim($owner.' — '.$item['document_type'], ' —');
 
         return match (true) {
             $item['days_left'] < 0 => __(':subject: expired on :date', ['subject' => $subject, 'date' => $date]),

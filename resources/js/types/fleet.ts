@@ -86,6 +86,16 @@ export type VehicleCan = {
     create_document: boolean;
     update_document: boolean;
     archive_document: boolean;
+    view_waybills: boolean;
+    create_waybill: boolean;
+};
+
+export type OpenWaybill = {
+    id: number;
+    number: string | null;
+    driver: string;
+    departure_at: string | null;
+    overdue: boolean;
 };
 
 export type VehicleOptions = {

@@ -344,16 +344,9 @@ const ru: Record<string, string> = {
     'Expiring in :days days': 'Истекают в течение :days дн.',
     'Document type': 'Тип документа',
     Sort: 'Сортировка',
-    'Vehicle documents and their expiry dates. Add documents from the vehicle card.':
-        'Документы транспорта и сроки их действия. Добавляйте документы из карточки ТС.',
     Expiry: 'Срок',
-    'Search by plate or document number':
-        'Поиск по госномеру или номеру документа',
-    'Plate or number': 'Госномер или номер',
     'Nothing found': 'Ничего не найдено',
     'No documents yet': 'Документов пока нет',
-    'Open a vehicle card and add its documents on the Documents tab.':
-        'Откройте карточку ТС и добавьте документы на вкладке «Документы».',
     'until :date': 'до :date',
     Vehicle: 'ТС',
     Document: 'Документ',
@@ -416,8 +409,6 @@ const ru: Record<string, string> = {
     'No files attached.': 'Файлы не приложены.',
     'Download :name': 'Скачать :name',
     Upload: 'Загрузить',
-    'The document becomes read-only and stays in the vehicle history. It cannot be deleted.':
-        'Документ станет доступен только для чтения и останется в истории ТС. Удалить его нельзя.',
     'Move to archive': 'Перенести в архив',
     'Add files': 'Добавить файлы',
     'To archive': 'В архив',
@@ -445,14 +436,197 @@ const ru: Record<string, string> = {
     'Documents expired': 'Просроченные документы',
     'Documents expiring in :days days':
         'Документы истекают в течение :days дн.',
-    'Open waybills will appear here after stage 5.':
-        'Открытые путевые листы появятся здесь после этапа 5.',
     'Expired: :list': 'Просрочены: :list',
     'Expiring soon: :list': 'Скоро истекают: :list',
     today: 'сегодня',
     'in :days d.': 'через :days дн.',
     'Mandatory documents not added: :list':
         'Не добавлены обязательные документы: :list',
+    // Drivers & waybills
+    Drivers: 'Водители',
+    'Driver directory: licences, categories and their documents.':
+        'Справочник водителей: удостоверения, категории и документы.',
+    'Add driver': 'Добавить водителя',
+    'Search by name, personnel or licence number':
+        'Поиск по ФИО, табельному номеру или номеру удостоверения',
+    'Name, personnel or licence no.': 'ФИО, таб. № или № ВУ',
+    'No drivers yet': 'Водителей пока нет',
+    'Add drivers to assign them to waybills and track their licences.':
+        'Добавьте водителей, чтобы назначать их в путевые листы и следить за сроками удостоверений.',
+    'On a trip': 'В рейсе',
+    'Categories not set': 'Категории не указаны',
+    'Pers. no. :number': 'Таб. № :number',
+    'Expired documents: :count': 'Просрочено документов: :count',
+    Call: 'Позвонить',
+    Waybill: 'Путевой лист',
+    'New waybill': 'Новый путевой лист',
+    'Driver sections': 'Разделы карточки водителя',
+    'On a trip: waybill :number, vehicle :plate':
+        'В рейсе: путевой лист :number, ТС :plate',
+    Open: 'Открыть',
+    'Inactive: cannot be assigned to new waybills. History is preserved.':
+        'Не работает: нельзя назначить в новые путевые листы. История сохранена.',
+    'Driving licence number': 'Номер водительского удостоверения',
+    'Not specified': 'Не указано',
+    'Licence categories': 'Категории ВУ',
+    Phone: 'Телефон',
+    'Personnel number': 'Табельный номер',
+    'User account': 'Учётная запись',
+    'No account': 'Без учётной записи',
+    'Saved as a draft first. The number is assigned when the waybill is issued.':
+        'Сначала сохраняется черновик. Номер присваивается при выдаче путевого листа.',
+    'Save draft': 'Сохранить черновик',
+    'Edit draft': 'Редактирование черновика',
+    Draft: 'Черновик',
+    'Departure from': 'Выезд с',
+    'Departure to': 'Выезд по',
+    'Trips: vehicle, trailer, driver, departure and return mileage.':
+        'Рейсы: ТС, прицеп, водитель, пробег при выезде и возврате.',
+    'Search by number, plate, driver or route':
+        'Поиск по номеру, госномеру, водителю или маршруту',
+    'Number, plate, driver, route': 'Номер, госномер, водитель, маршрут',
+    Dates: 'Даты',
+    'No waybills yet': 'Путевых листов пока нет',
+    'Create a waybill for a trip: choose the vehicle, trailer and driver.':
+        'Оформите путевой лист на рейс: выберите ТС, прицеп и водителя.',
+    Driver: 'Водитель',
+    Route: 'Маршрут',
+    Time: 'Время',
+    Distance: 'Пробег',
+    'Waybill :number': 'Путевой лист :number',
+    'Waybill draft': 'Черновик путевого листа',
+    'Cannot be issued yet': 'Пока нельзя выдать',
+    'Cancellation reason': 'Причина отмены',
+    Issue: 'Выдать',
+    'Close trip': 'Закрыть рейс',
+    'Cancel waybill': 'Отменить путевой лист',
+    Crew: 'Экипаж',
+    Trip: 'Рейс',
+    'Planned departure': 'Плановый выезд',
+    'Planned return': 'Плановый возврат',
+    Departure: 'Выезд',
+    Return: 'Возврат',
+    'Not calculated: no odometer readings':
+        'Не рассчитан: нет показаний одометра',
+    Created: 'Создан',
+    Issued: 'Выдан',
+    Closed: 'Закрыт',
+    Cancelled: 'Отменён',
+    History: 'История',
+    'Issue waybill': 'Выдать путевой лист',
+    'The waybill gets its number, and the vehicle and driver are marked as on a trip.':
+        'Путевому листу присваивается номер, ТС и водитель отмечаются как находящиеся в рейсе.',
+    'Departure time': 'Время выезда',
+    'Odometer at departure, km': 'Одометр при выезде, км',
+    'Last recorded: :km': 'Последнее показание: :km',
+    'The return reading is saved to the vehicle mileage history.':
+        'Показание при возврате сохраняется в историю пробега ТС.',
+    'Return time': 'Время возврата',
+    'Odometer on return, km': 'Одометр при возврате, км',
+    'At departure: :km. Trip: :distance': 'При выезде: :km. За рейс: :distance',
+    'At departure: :km': 'При выезде: :km',
+    'The number stays used. Odometer readings already recorded are kept in the history.':
+        'Номер остаётся занятым. Уже записанные показания одометра сохраняются в истории.',
+    'The draft is kept in the list as cancelled.':
+        'Черновик останется в списке со статусом «Отменён».',
+    'Left :at, back by :until': 'Выезд :at, возврат до :until',
+    'Left :at': 'Выезд :at',
+    'Planned :at': 'План: :at',
+    'on a trip': 'в рейсе',
+    'This vehicle is on another trip. The draft can be saved, but it can only be issued after that trip is closed.':
+        'Это ТС сейчас в другом рейсе. Черновик можно сохранить, но выдать его получится только после закрытия того рейса.',
+    'Choose a vehicle': 'Выберите ТС',
+    'This trailer is on another trip.': 'Этот прицеп сейчас в другом рейсе.',
+    'No trailer': 'Без прицепа',
+    'This driver is on another trip.': 'Этот водитель сейчас в другом рейсе.',
+    'Choose a driver': 'Выберите водителя',
+    'The driver card has no category :category. Check the licence before issuing.':
+        'В карточке водителя нет категории :category. Проверьте удостоверение перед выдачей.',
+    'For example: Chișinău — Bălți — Chișinău':
+        'Например: Кишинёв — Бельцы — Кишинёв',
+    'Used to flag overdue returns.': 'По нему отмечается просроченный возврат.',
+    'Could not load waybills': 'Не удалось загрузить путевые листы',
+    'Waybills issued for trips will appear here with departure and return mileage.':
+        'Здесь появятся путевые листы рейсов с пробегом при выезде и возврате.',
+    'All waybills': 'Все путевые листы',
+    'Return overdue': 'Просрочен возврат',
+    'Edit driver': 'Редактирование водителя',
+    'New driver': 'Новый водитель',
+    'Last name': 'Фамилия',
+    'First name': 'Имя',
+    'Middle name': 'Отчество',
+    'The licence expiry date is kept as a driver document with reminders.':
+        'Срок действия удостоверения ведётся как документ водителя с напоминаниями.',
+    'Optional. Links the driver to a CRM login, for example to show their own waybills.':
+        'Необязательно. Связывает водителя с учётной записью CRM, например чтобы показывать ему его путевые листы.',
+    'Inactive drivers cannot be assigned to new waybills. Their history is kept.':
+        'Неработающего водителя нельзя назначить в новый путевой лист. История сохраняется.',
+    'On a trip: waybill :number, driver :driver':
+        'В рейсе: путевой лист :number, водитель :driver',
+    'Planned return time has passed.': 'Плановое время возврата прошло.',
+    'Trips closed today': 'Рейсов закрыто сегодня',
+    'Belongs to': 'Чей документ',
+    'Vehicles and drivers': 'Транспорт и водители',
+    'Vehicle and driver documents with expiry dates. Add documents from the vehicle or driver card.':
+        'Документы транспорта и водителей со сроками действия. Добавляются из карточки ТС или водителя.',
+    'Search by plate, driver or document number':
+        'Поиск по госномеру, водителю или номеру документа',
+    'Plate, driver or number': 'Госномер, водитель или номер',
+    'Open a vehicle or driver card and add documents on the Documents tab.':
+        'Откройте карточку ТС или водителя и добавьте документы на вкладке «Документы».',
+    'Vehicle or driver': 'ТС или водитель',
+    'The document becomes read-only and stays in the history. It cannot be deleted.':
+        'Документ станет доступен только для чтения и останется в истории. Удалить его нельзя.',
+    Void: 'Отменить',
+    'No number': 'Без номера',
+    Change: 'Изменить',
+    search: 'поиск',
+    'Show :count more': 'Показать ещё :count',
+    'Keep :value': 'Оставить: :value',
+    'Choose a vehicle.': 'Выберите транспортное средство.',
+    'Choose a driver.': 'Выберите водителя.',
+    'Enter the planned departure time.': 'Укажите плановое время выезда.',
+    'Enter the route.': 'Укажите маршрут.',
+    'The planned return must be later than the departure.':
+        'Плановое возвращение должно быть позже выезда.',
+    'Vehicle status: :status.': 'Статус ТС: :status.',
+    'No planned return time: an overdue return will not be flagged.':
+        'Не указано плановое возвращение: просрочка возврата не будет отмечена.',
+    'Categories: :list': 'Категории: :list',
+    Steps: 'Шаги',
+    Review: 'Проверка',
+    'Vehicle and trailer': 'ТС и прицеп',
+    'Date, route and basis': 'Дата, маршрут и основание',
+    'Check and save': 'Проверьте и сохраните',
+    ':current of :total. :title': ':current из :total. :title',
+    'Plate, make or branch': 'Госномер, марка или филиал',
+    'No vehicles found.': 'Транспорт не найден.',
+    'Trailer plate': 'Госномер прицепа',
+    'No trailers found.': 'Прицепы не найдены.',
+    'Name or licence category': 'ФИО или категория прав',
+    'No active drivers found.': 'Активные водители не найдены.',
+    'Basis for the trip': 'Основание рейса',
+    'Order, contract or request number.': 'Номер заказа, договора или заявки.',
+    Basis: 'Основание',
+    'The waybill is saved as a draft. The odometer reading and fuel are entered when it is issued at departure.':
+        'Путевой лист сохраняется как черновик. Показание одометра и топливо вносятся при выдаче, в момент выезда.',
+    'The waybill is saved as a draft and gets its number when issued.':
+        'Путевой лист сохраняется как черновик и получает номер при выдаче.',
+    Next: 'Далее',
+    Fuel: 'Топливо',
+    ':value l': ':value л',
+    Refuelled: 'Заправлено',
+    'Used: :value l': 'Расход: :value л',
+    'Fuel figures do not add up: more on return than at departure plus refuelling.':
+        'Данные по топливу не сходятся: при возврате больше, чем при выезде с учётом заправок.',
+    ':km more than the last recorded reading. Check the value: trips in between may be missing.':
+        'На :km больше последнего записанного показания. Проверьте значение: возможно, не учтены промежуточные поездки.',
+    'Fuel at departure, l': 'Топливо при выезде, л',
+    'Unusually long trip: :km. Check the reading.':
+        'Необычно длинный рейс: :km. Проверьте показание.',
+    'Fuel on return, l': 'Топливо при возврате, л',
+    'Refuelled, l': 'Заправлено, л',
+    'Recent waybills': 'Последние путевые листы',
 };
 
 export default ru;

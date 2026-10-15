@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\DocumentSubject;
 use App\Enums\OwnershipType;
 use App\Enums\VehicleStatus;
 use App\Models\Concerns\BelongsToOrganization;
+use App\Models\Contracts\HasDocuments;
 use App\Support\BranchAccess;
 use Database\Factories\VehicleFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -40,7 +42,7 @@ use Spatie\Activitylog\Support\LogOptions;
  * @property Carbon|null $deleted_at
  * @property-read VehicleType $type
  */
-class Vehicle extends Model
+class Vehicle extends Model implements HasDocuments
 {
     /** @use HasFactory<VehicleFactory> */
     use BelongsToOrganization, HasFactory, LogsActivity, SoftDeletes;
@@ -213,6 +215,41 @@ class Vehicle extends Model
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable');
+    }
+
+    public function waybills(): HasMany
+    {
+        return $this->hasMany(Waybill::class);
+    }
+
+    public function documentSubject(): DocumentSubject
+    {
+        return DocumentSubject::Vehicle;
+    }
+
+    public function applicableDocumentTypes(): Builder
+    {
+        return DocumentType::query()->forVehicleCategory($this->loadMissing('type')->type->category);
+    }
+
+    public function documentBranchId(): ?int
+    {
+        return $this->branch_id;
+    }
+
+    public function documentLabel(): string
+    {
+        return $this->plate_number;
+    }
+
+    public function documentsUrl(): string
+    {
+        return route('vehicles.show', ['vehicle' => $this->id, 'tab' => 'documents'], false);
+    }
+
+    public function isOperational(): bool
+    {
+        return $this->status !== VehicleStatus::Decommissioned && ! $this->trashed();
     }
 
     public function tasks(): MorphMany

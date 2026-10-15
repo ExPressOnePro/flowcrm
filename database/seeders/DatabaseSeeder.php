@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             DemoSeeder::class,
             FleetDemoSeeder::class,
             FleetDocumentsDemoSeeder::class,
+            FleetWaybillsDemoSeeder::class,
         ]);
     }
 }

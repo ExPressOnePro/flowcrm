@@ -1,6 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { LogOut, Menu, Palette, UserRound } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ResponsiveSheet } from '@/components/responsive-sheet';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useT } from '@/lib/i18n';
@@ -21,6 +21,7 @@ export function BottomNav() {
     const { allowed, filterGroups } = useNavPermissions();
     const [moreOpen, setMoreOpen] = useState(false);
     const keyboardOpen = useEditingField();
+    const navRef = usePublishedHeight('--bottom-nav-h');
 
     const pinned = bottomNavItems.filter(allowed);
     const moreGroups = filterGroups(navGroups, bottomNavItems);
@@ -35,6 +36,7 @@ export function BottomNav() {
     return (
         <>
             <nav
+                ref={navRef}
                 aria-label={t('Main navigation')}
                 className={cn(
                     'fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-safe backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden',
@@ -185,6 +187,35 @@ function MoreLink({ item, active }: { item: NavItem; active: boolean }) {
             )}
         </Link>
     );
+}
+
+/**
+ * Mirrors the element's height into a CSS variable on <html>, so sticky bars
+ * can sit right above the navigation (0 while it is hidden).
+ */
+function usePublishedHeight(variable: string) {
+    const ref = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        const element = ref.current;
+        const root = document.documentElement;
+
+        if (!element) {
+            return;
+        }
+
+        const observer = new ResizeObserver(() =>
+            root.style.setProperty(variable, `${element.offsetHeight}px`),
+        );
+        observer.observe(element);
+
+        return () => {
+            observer.disconnect();
+            root.style.removeProperty(variable);
+        };
+    }, [variable]);
+
+    return ref;
 }
 
 /**

@@ -83,6 +83,15 @@ class RolesAndPermissionsSeeder extends Seeder
         'documents.notify',
         'document_types.manage',
 
+        'drivers.view',
+        'drivers.manage',
+
+        'waybills.view',
+        'waybills.create',
+        'waybills.issue',
+        'waybills.close',
+        'waybills.cancel',
+
         'audit.view',
     ];
 

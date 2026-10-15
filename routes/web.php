@@ -8,6 +8,7 @@ use App\Http\Controllers\DealController;
 use App\Http\Controllers\Documents\DocumentController;
 use App\Http\Controllers\Documents\DocumentTypeController;
 use App\Http\Controllers\Fleet\BranchController;
+use App\Http\Controllers\Fleet\DriverController;
 use App\Http\Controllers\Fleet\OdometerReadingController;
 use App\Http\Controllers\Fleet\VehicleController;
 use App\Http\Controllers\Fleet\VehicleCouplingController;
@@ -17,6 +18,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\Waybills\WaybillController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -96,12 +98,31 @@ Route::middleware(['auth', 'verified', 'organization'])->group(function () {
     Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::post('notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
 
+    Route::get('drivers', [DriverController::class, 'index'])->name('drivers.index');
+    Route::post('drivers', [DriverController::class, 'store'])->name('drivers.store');
+    Route::get('drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
+    Route::put('drivers/{driver}', [DriverController::class, 'update'])->name('drivers.update');
+    Route::get('drivers/{driver}/documents', [DocumentController::class, 'forDriver'])->name('drivers.documents.index');
+    Route::post('drivers/{driver}/documents', [DocumentController::class, 'storeForDriver'])->name('drivers.documents.store');
+    Route::get('drivers/{driver}/waybills', [WaybillController::class, 'forDriver'])->name('drivers.waybills.index');
+
+    Route::get('waybills', [WaybillController::class, 'index'])->name('waybills.index');
+    Route::get('waybills/create', [WaybillController::class, 'create'])->name('waybills.create');
+    Route::post('waybills', [WaybillController::class, 'store'])->name('waybills.store');
+    Route::get('waybills/{waybill}', [WaybillController::class, 'show'])->name('waybills.show');
+    Route::get('waybills/{waybill}/edit', [WaybillController::class, 'edit'])->name('waybills.edit');
+    Route::put('waybills/{waybill}', [WaybillController::class, 'update'])->name('waybills.update');
+    Route::post('waybills/{waybill}/issue', [WaybillController::class, 'issue'])->name('waybills.issue');
+    Route::post('waybills/{waybill}/close', [WaybillController::class, 'close'])->name('waybills.close');
+    Route::post('waybills/{waybill}/cancel', [WaybillController::class, 'cancel'])->name('waybills.cancel');
+    Route::get('vehicles/{vehicle}/waybills', [WaybillController::class, 'forVehicle'])
+        ->withTrashed()
+        ->name('vehicles.waybills.index');
+
     Route::get('analytics', AnalyticsController::class)->name('analytics');
 
     // Fleet modules scheduled for later stages; routes exist so navigation is stable.
     Route::middleware('can:vehicles.view')->group(function () {
-        Route::inertia('waybills', 'placeholders/module', ['module' => 'Waybills', 'stage' => 5])
-            ->name('waybills.index');
         Route::inertia('operations', 'placeholders/module', ['module' => 'Operations history', 'stage' => 6])
             ->name('operations.index');
         Route::inertia('maintenance', 'placeholders/module', ['module' => 'Maintenance', 'stage' => 7])

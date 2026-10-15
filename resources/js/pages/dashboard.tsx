@@ -5,6 +5,9 @@ import {
     BarChart3,
     CheckSquare2,
     ChevronRight,
+    CircleCheck,
+    ClipboardList,
+    Clock,
     FileClock,
     FileWarning,
     Gauge,
@@ -16,6 +19,8 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { VehicleStatusBadge } from '@/components/fleet/vehicle-status-badge';
 import { Button } from '@/components/ui/button';
+import { useWaybillTimes } from '@/components/waybills/waybill-card';
+import { WaybillStatusBadge } from '@/components/waybills/waybill-status-badge';
 import { useFormat } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -23,6 +28,8 @@ import { analytics, dashboard } from '@/routes';
 import documentRoutes from '@/routes/documents';
 import tasks from '@/routes/tasks';
 import vehicles from '@/routes/vehicles';
+import waybillRoutes from '@/routes/waybills';
+import type { WaybillListItem } from '@/types/waybills';
 
 type Fleet = {
     total: number;
@@ -53,6 +60,8 @@ type TaskItem = {
 type Props = {
     fleet: Fleet | null;
     documents: { expired: number; expiring: number } | null;
+    waybills: { open: number; overdue: number; closed_today: number } | null;
+    recentWaybills: WaybillListItem[];
     expiringDays: number;
     attention: AttentionItem[];
     tasks: TaskItem[];
@@ -61,12 +70,15 @@ type Props = {
         create_vehicle: boolean;
         view_analytics: boolean;
         view_tasks: boolean;
+        create_waybill: boolean;
     };
 };
 
 export default function Dashboard({
     fleet,
     documents,
+    waybills,
+    recentWaybills,
     expiringDays,
     attention,
     tasks: myTasks,
@@ -90,9 +102,22 @@ export default function Dashboard({
                             {t('Fleet status and what needs attention today.')}
                         </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 sm:flex">
-                        {can.create_vehicle && (
+                    <div className="grid grid-cols-2 gap-2 sm:flex [&>*:first-child:nth-last-child(odd)]:col-span-2">
+                        {can.create_waybill && (
                             <Button asChild>
+                                <Link href={waybillRoutes.create()}>
+                                    <ClipboardList />
+                                    {t('New waybill')}
+                                </Link>
+                            </Button>
+                        )}
+                        {can.create_vehicle && (
+                            <Button
+                                variant={
+                                    can.create_waybill ? 'outline' : 'default'
+                                }
+                                asChild
+                            >
                                 <Link href={vehicles.create()}>
                                     <Plus />
                                     {t('New vehicle')}
@@ -147,6 +172,39 @@ export default function Dashboard({
                                     query: { status: 'idle' },
                                 })}
                             />
+                            {waybills && (
+                                <>
+                                    <Kpi
+                                        label={t('On a trip')}
+                                        value={waybills.open}
+                                        icon={ClipboardList}
+                                        href={waybillRoutes.index({
+                                            query: { status: 'issued' },
+                                        })}
+                                    />
+                                    <Kpi
+                                        label={t('Return overdue')}
+                                        value={waybills.overdue}
+                                        icon={Clock}
+                                        href={waybillRoutes.index({
+                                            query: { status: 'overdue' },
+                                        })}
+                                        tone={
+                                            waybills.overdue > 0
+                                                ? 'danger'
+                                                : undefined
+                                        }
+                                    />
+                                    <Kpi
+                                        label={t('Trips closed today')}
+                                        value={waybills.closed_today}
+                                        icon={CircleCheck}
+                                        href={waybillRoutes.index({
+                                            query: { status: 'closed' },
+                                        })}
+                                    />
+                                </>
+                            )}
                             <Kpi
                                 label={t('Road trains')}
                                 value={fleet.road_trains}
@@ -214,9 +272,6 @@ export default function Dashboard({
                                 muted
                             />
                         </div>
-                        <p className="mt-3 text-xs text-muted-foreground">
-                            {t('Open waybills will appear here after stage 5.')}
-                        </p>
                     </section>
                 )}
 
@@ -238,6 +293,31 @@ export default function Dashboard({
                                             <AttentionRow
                                                 item={item}
                                                 staleDays={staleOdometerDays}
+                                            />
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </section>
+                    )}
+
+                    {waybills && (
+                        <section className="rounded-xl border">
+                            <SectionHeader
+                                title={t('Recent waybills')}
+                                icon={ClipboardList}
+                                href={waybillRoutes.index()}
+                            />
+                            {recentWaybills.length === 0 ? (
+                                <p className="px-4 pb-4 text-sm text-muted-foreground">
+                                    {t('No waybills yet')}
+                                </p>
+                            ) : (
+                                <ul className="divide-y">
+                                    {recentWaybills.map((waybill) => (
+                                        <li key={waybill.id}>
+                                            <RecentWaybillRow
+                                                waybill={waybill}
                                             />
                                         </li>
                                     ))}
@@ -271,6 +351,40 @@ export default function Dashboard({
                 </div>
             </div>
         </>
+    );
+}
+
+function RecentWaybillRow({ waybill }: { waybill: WaybillListItem }) {
+    const { t } = useT();
+    const times = useWaybillTimes();
+
+    return (
+        <Link
+            href={waybillRoutes.show(waybill.id)}
+            className="flex min-h-14 items-center gap-3 px-4 py-2.5 hover:bg-muted/40"
+        >
+            <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="font-mono text-sm font-medium">
+                        {waybill.number ?? t('No number')}
+                    </span>
+                    <WaybillStatusBadge
+                        status={waybill.status}
+                        overdue={waybill.overdue}
+                    />
+                </div>
+                <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                    <span className="font-mono">
+                        {waybill.vehicle.plate_number}
+                    </span>
+                    {' · '}
+                    {waybill.driver.name}
+                    {' · '}
+                    {times(waybill)}
+                </div>
+            </div>
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        </Link>
     );
 }
 

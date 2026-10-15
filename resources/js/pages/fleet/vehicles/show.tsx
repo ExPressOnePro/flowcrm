@@ -19,7 +19,7 @@ import type { ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 import { useConfirm } from '@/components/confirm-dialog';
-import { VehicleDocuments } from '@/components/documents/vehicle-documents';
+import { SubjectDocuments } from '@/components/documents/subject-documents';
 import {
     CoupleSheet,
     OdometerSheet,
@@ -33,16 +33,20 @@ import { VehicleTimeline } from '@/components/fleet/vehicle-timeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { WaybillList } from '@/components/waybills/waybill-list';
 import { useFormat } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import vehicles from '@/routes/vehicles';
+import vehicleWaybills from '@/routes/vehicles/waybills';
+import waybillRoutes from '@/routes/waybills';
 import type { DocumentSummary } from '@/types/documents';
 import type {
     ActiveCoupling,
     CouplingCandidate,
     LastReading,
+    OpenWaybill,
     VehicleCan,
     VehicleDetail,
 } from '@/types/fleet';
@@ -55,6 +59,7 @@ type Props = {
     couplingCandidates: CouplingCandidate[];
     statuses: string[];
     documentSummary: DocumentSummary | null;
+    openWaybill: OpenWaybill | null;
     can: VehicleCan;
 };
 
@@ -119,7 +124,8 @@ export default function VehiclesShow(props: Props) {
     const tabs = TABS.filter(
         (key) =>
             (key !== 'log' || can.view_audit) &&
-            (key !== 'documents' || can.view_documents),
+            (key !== 'documents' || can.view_documents) &&
+            (key !== 'waybills' || can.view_waybills),
     );
 
     function selectTab(next: Tab) {
@@ -164,6 +170,27 @@ export default function VehiclesShow(props: Props) {
         onClick?: () => void;
         href?: string;
     }[] = [
+        ...(props.openWaybill
+            ? [
+                  {
+                      key: 'waybill',
+                      label: t('Waybill'),
+                      icon: ClipboardList,
+                      href: waybillRoutes.show.url(props.openWaybill.id),
+                  },
+              ]
+            : can.create_waybill
+              ? [
+                    {
+                        key: 'waybill',
+                        label: t('New waybill'),
+                        icon: ClipboardList,
+                        href: waybillRoutes.create.url({
+                            query: { vehicle_id: vehicle.id },
+                        }),
+                    },
+                ]
+              : []),
         ...(can.change_status
             ? [
                   {
@@ -328,9 +355,9 @@ export default function VehiclesShow(props: Props) {
                         />
                     )}
                     {tab === 'documents' && can.view_documents && (
-                        <VehicleDocuments
-                            vehicleId={vehicle.id}
-                            vehicleArchived={vehicle.archived}
+                        <SubjectDocuments
+                            owner={{ kind: 'vehicle', id: vehicle.id }}
+                            readOnly={vehicle.archived}
                             can={{
                                 create: can.create_document,
                                 renew:
@@ -342,8 +369,21 @@ export default function VehiclesShow(props: Props) {
                             }}
                         />
                     )}
-                    {tab === 'waybills' && (
-                        <ComingSoon icon={ClipboardList} stage={5} />
+                    {tab === 'waybills' && can.view_waybills && (
+                        <WaybillList
+                            url={vehicleWaybills.index.url(vehicle.id)}
+                            hide="vehicle"
+                            createUrl={
+                                can.create_waybill && !props.openWaybill
+                                    ? waybillRoutes.create.url({
+                                          query: { vehicle_id: vehicle.id },
+                                      })
+                                    : null
+                            }
+                            fullListUrl={waybillRoutes.index.url({
+                                query: { search: vehicle.plate_number },
+                            })}
+                        />
                     )}
                     {tab === 'history' && (
                         <VehicleTimeline
@@ -407,6 +447,7 @@ function Warnings({
     staleOdometerDays,
     lastReading,
     documentSummary,
+    openWaybill,
     onRecord,
     onDocuments,
 }: Props & { onRecord: () => void; onDocuments: () => void }) {
@@ -428,6 +469,29 @@ function Warnings({
                 {
                     date: format.dayOf(vehicle.deleted_at),
                 },
+            ),
+        });
+    }
+
+    if (openWaybill) {
+        const text = t('On a trip: waybill :number, driver :driver', {
+            number: openWaybill.number ?? '',
+            driver: openWaybill.driver,
+        });
+
+        items.push({
+            key: 'waybill',
+            tone: openWaybill.overdue ? 'danger' : 'info',
+            text: openWaybill.overdue
+                ? `${text}. ${t('Planned return time has passed.')}`
+                : text,
+            action: (
+                <Button size="sm" variant="outline" asChild>
+                    <Link href={waybillRoutes.show.url(openWaybill.id)}>
+                        <ClipboardList />
+                        {t('Open')}
+                    </Link>
+                </Button>
             ),
         });
     }
@@ -745,7 +809,7 @@ function Overview({
                                                 href={vehicles.show(
                                                     coupling.partner.id,
                                                 )}
-                                                className="font-mono font-semibold underline-offset-4 hover:underline"
+                                                className="-my-3 inline-flex min-h-11 items-center font-mono font-semibold underline-offset-4 hover:underline md:my-0 md:min-h-0"
                                             >
                                                 {coupling.partner.plate_number}
                                             </Link>

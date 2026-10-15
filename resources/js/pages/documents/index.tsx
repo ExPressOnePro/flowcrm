@@ -21,6 +21,7 @@ import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import documentRoutes from '@/routes/documents';
+import drivers from '@/routes/drivers';
 import vehicles from '@/routes/vehicles';
 import type { DocumentListItem } from '@/types/documents';
 import type { Option, Paginated } from '@/types/fleet';
@@ -28,6 +29,7 @@ import type { Option, Paginated } from '@/types/fleet';
 type Filters = {
     search: string;
     state: string;
+    subject: string;
     type: string;
     branch: string;
     sort: string;
@@ -37,13 +39,26 @@ type Props = {
     documents: Paginated<DocumentListItem>;
     filters: Filters;
     counts: { expired: number; expiring: number };
-    types: Option[];
+    types: (Option & { subject: string })[];
     branches: Option[];
     expiringDays: number;
 };
 
 const STATES = ['', 'expiring', 'expired', 'valid', 'no_expiry', 'archived'];
 const SORTS = ['expires', '-expires', 'plate', 'type'];
+const SUBJECTS = ['vehicle', 'driver'];
+
+function subjectUrl(document: DocumentListItem) {
+    const options = { query: { tab: 'documents' } };
+
+    if (document.driver) {
+        return drivers.show.url(document.driver.id, options);
+    }
+
+    return document.vehicle
+        ? vehicles.show.url(document.vehicle.id, options)
+        : null;
+}
 
 function query(filters: Filters) {
     return Object.fromEntries(
@@ -80,7 +95,9 @@ export default function DocumentsIndex(props: Props) {
         visit({ ...filters, search, ...changes });
     }
 
-    const extraFilters = [filters.type, filters.branch].filter(Boolean).length;
+    const extraFilters = [filters.subject, filters.type, filters.branch].filter(
+        Boolean,
+    ).length;
     const stateLabel = (state: string) =>
         state === ''
             ? t('All current')
@@ -99,6 +116,23 @@ export default function DocumentsIndex(props: Props) {
         onChange: (changes: Partial<Filters>) => void,
     ) => (
         <>
+            <Field id="filter-subject" label={t('Belongs to')}>
+                <select
+                    id="filter-subject"
+                    className={selectClass}
+                    value={value.subject}
+                    onChange={(event) =>
+                        onChange({ subject: event.target.value, type: '' })
+                    }
+                >
+                    <option value="">{t('Vehicles and drivers')}</option>
+                    {SUBJECTS.map((subject) => (
+                        <option key={subject} value={subject}>
+                            {label('document_subject', subject)}
+                        </option>
+                    ))}
+                </select>
+            </Field>
             <Field id="filter-type" label={t('Document type')}>
                 <select
                     id="filter-type"
@@ -107,11 +141,17 @@ export default function DocumentsIndex(props: Props) {
                     onChange={(event) => onChange({ type: event.target.value })}
                 >
                     <option value="">{t('All types')}</option>
-                    {types.map((type) => (
-                        <option key={type.id} value={type.id}>
-                            {type.name}
-                        </option>
-                    ))}
+                    {types
+                        .filter(
+                            (type) =>
+                                !value.subject ||
+                                type.subject === value.subject,
+                        )
+                        .map((type) => (
+                            <option key={type.id} value={type.id}>
+                                {type.name}
+                            </option>
+                        ))}
                 </select>
             </Field>
             {branches.length > 1 && (
@@ -158,7 +198,7 @@ export default function DocumentsIndex(props: Props) {
                 <Heading
                     title={t('Documents')}
                     description={t(
-                        'Vehicle documents and their expiry dates. Add documents from the vehicle card.',
+                        'Vehicle and driver documents with expiry dates. Add documents from the vehicle or driver card.',
                     )}
                 />
 
@@ -213,8 +253,10 @@ export default function DocumentsIndex(props: Props) {
                             autoCorrect="off"
                             spellCheck={false}
                             value={search}
-                            aria-label={t('Search by plate or document number')}
-                            placeholder={t('Plate or number')}
+                            aria-label={t(
+                                'Search by plate, driver or document number',
+                            )}
+                            placeholder={t('Plate, driver or number')}
                             className="pl-9"
                             onChange={(event) => {
                                 const value = event.target.value;
@@ -262,8 +304,19 @@ export default function DocumentsIndex(props: Props) {
                     </div>
                 </div>
 
-                {(filters.type || filters.branch) && (
+                {(filters.subject || filters.type || filters.branch) && (
                     <div className="flex flex-wrap items-center gap-2">
+                        {filters.subject && (
+                            <button
+                                type="button"
+                                onClick={() => apply({ subject: '', type: '' })}
+                                className="inline-flex min-h-9 items-center gap-1 rounded-full border bg-muted/40 py-1 pr-2 pl-3 text-sm hover:bg-muted max-md:min-h-11"
+                                aria-label={`${t('Remove filter')}: ${label('document_subject', filters.subject)}`}
+                            >
+                                {label('document_subject', filters.subject)}
+                                <X className="size-4 text-muted-foreground" />
+                            </button>
+                        )}
                         {filters.type && (
                             <button
                                 type="button"
@@ -312,6 +365,7 @@ export default function DocumentsIndex(props: Props) {
                             icon={FileText}
                             title={
                                 filters.search ||
+                                filters.subject ||
                                 filters.type ||
                                 filters.branch ||
                                 filters.state
@@ -320,16 +374,18 @@ export default function DocumentsIndex(props: Props) {
                             }
                             description={
                                 filters.search ||
+                                filters.subject ||
                                 filters.type ||
                                 filters.branch ||
                                 filters.state
                                     ? t('Try changing the filters.')
                                     : t(
-                                          'Open a vehicle card and add its documents on the Documents tab.',
+                                          'Open a vehicle or driver card and add documents on the Documents tab.',
                                       )
                             }
                             action={
                                 filters.search ||
+                                filters.subject ||
                                 filters.type ||
                                 filters.branch ||
                                 filters.state ? (
@@ -340,6 +396,7 @@ export default function DocumentsIndex(props: Props) {
                                             visit({
                                                 search: '',
                                                 state: '',
+                                                subject: '',
                                                 type: '',
                                                 branch: '',
                                                 sort: filters.sort,
@@ -357,28 +414,26 @@ export default function DocumentsIndex(props: Props) {
                                 {documents.data.map((document) => (
                                     <li key={document.id}>
                                         <Link
-                                            href={
-                                                document.vehicle
-                                                    ? vehicles.show.url(
-                                                          document.vehicle.id,
-                                                          {
-                                                              query: {
-                                                                  tab: 'documents',
-                                                              },
-                                                          },
-                                                      )
-                                                    : '#'
-                                            }
+                                            href={subjectUrl(document) ?? '#'}
                                             className="flex h-full items-start gap-3 rounded-xl border bg-card p-4 hover:bg-muted/40"
                                         >
                                             <div className="min-w-0 flex-1 space-y-1.5">
                                                 <div className="flex items-center justify-between gap-2">
-                                                    <span className="min-w-0 truncate font-mono text-base font-semibold">
-                                                        {
-                                                            document.vehicle
-                                                                ?.plate_number
-                                                        }
-                                                    </span>
+                                                    {document.driver ? (
+                                                        <span className="min-w-0 truncate text-base font-semibold">
+                                                            {
+                                                                document.driver
+                                                                    .name
+                                                            }
+                                                        </span>
+                                                    ) : (
+                                                        <span className="min-w-0 truncate font-mono text-base font-semibold">
+                                                            {
+                                                                document.vehicle
+                                                                    ?.plate_number
+                                                            }
+                                                        </span>
+                                                    )}
                                                     <DocumentStateBadge
                                                         state={document.state}
                                                         daysLeft={
@@ -404,13 +459,15 @@ export default function DocumentsIndex(props: Props) {
                                                             })}
                                                         </span>
                                                     )}
-                                                    {document.vehicle
-                                                        ?.branch && (
+                                                    {(document.vehicle
+                                                        ?.branch ??
+                                                        document.driver
+                                                            ?.branch) && (
                                                         <span>
-                                                            {
-                                                                document.vehicle
-                                                                    .branch
-                                                            }
+                                                            {document.vehicle
+                                                                ?.branch ??
+                                                                document.driver
+                                                                    ?.branch}
                                                         </span>
                                                     )}
                                                     {document.files_count >
@@ -435,7 +492,7 @@ export default function DocumentsIndex(props: Props) {
                                     <thead className="bg-muted/40 text-left text-muted-foreground">
                                         <tr>
                                             <th className="px-4 py-2.5 font-medium">
-                                                {t('Vehicle')}
+                                                {t('Vehicle or driver')}
                                             </th>
                                             <th className="px-4 py-2.5 font-medium">
                                                 {t('Document')}
@@ -468,15 +525,11 @@ export default function DocumentsIndex(props: Props) {
                                                 <td className="px-4 py-2.5">
                                                     {document.vehicle && (
                                                         <Link
-                                                            href={vehicles.show.url(
-                                                                document.vehicle
-                                                                    .id,
-                                                                {
-                                                                    query: {
-                                                                        tab: 'documents',
-                                                                    },
-                                                                },
-                                                            )}
+                                                            href={
+                                                                subjectUrl(
+                                                                    document,
+                                                                ) ?? '#'
+                                                            }
                                                             className="font-mono font-medium hover:underline"
                                                         >
                                                             {
@@ -485,8 +538,25 @@ export default function DocumentsIndex(props: Props) {
                                                             }
                                                         </Link>
                                                     )}
+                                                    {document.driver && (
+                                                        <Link
+                                                            href={
+                                                                subjectUrl(
+                                                                    document,
+                                                                ) ?? '#'
+                                                            }
+                                                            className="font-medium hover:underline"
+                                                        >
+                                                            {
+                                                                document.driver
+                                                                    .name
+                                                            }
+                                                        </Link>
+                                                    )}
                                                     <div className="text-xs text-muted-foreground">
-                                                        {document.vehicle?.name}
+                                                        {document.vehicle
+                                                            ?.name ??
+                                                            t('Driver')}
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-2.5">
@@ -512,6 +582,8 @@ export default function DocumentsIndex(props: Props) {
                                                 </td>
                                                 <td className="hidden px-4 py-2.5 xl:table-cell">
                                                     {document.vehicle?.branch ??
+                                                        document.driver
+                                                            ?.branch ??
                                                         '—'}
                                                 </td>
                                                 <td className="px-4 py-2.5 text-muted-foreground">
@@ -555,6 +627,7 @@ export default function DocumentsIndex(props: Props) {
                             onClick={() =>
                                 setDraft({
                                     ...draft,
+                                    subject: '',
                                     type: '',
                                     branch: '',
                                     sort: 'expires',

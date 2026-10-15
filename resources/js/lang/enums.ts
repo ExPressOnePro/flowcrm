@@ -69,6 +69,27 @@ const ru: EnumLabels = {
         vehicle: 'Транспорт',
         driver: 'Водители',
     },
+    driver_status: {
+        active: 'Работает',
+        inactive: 'Не работает',
+    },
+    driver_status_filter: {
+        active: 'Работают',
+        inactive: 'Не работают',
+    },
+    waybill_status: {
+        draft: 'Черновик',
+        issued: 'В рейсе',
+        closed: 'Закрыт',
+        cancelled: 'Отменён',
+    },
+    waybill_filter: {
+        issued: 'В рейсе',
+        overdue: 'Просрочен возврат',
+        draft: 'Черновики',
+        closed: 'Закрытые',
+        cancelled: 'Отменённые',
+    },
     document_sort: {
         expires: 'Сначала истекающие',
         '-expires': 'Сначала поздние сроки',
@@ -145,6 +166,27 @@ const en: EnumLabels = {
     document_subject: {
         vehicle: 'Vehicles',
         driver: 'Drivers',
+    },
+    driver_status: {
+        active: 'Active',
+        inactive: 'Inactive',
+    },
+    driver_status_filter: {
+        active: 'Active',
+        inactive: 'Inactive',
+    },
+    waybill_status: {
+        draft: 'Draft',
+        issued: 'On a trip',
+        closed: 'Closed',
+        cancelled: 'Cancelled',
+    },
+    waybill_filter: {
+        issued: 'On a trip',
+        overdue: 'Return overdue',
+        draft: 'Drafts',
+        closed: 'Closed',
+        cancelled: 'Cancelled',
     },
     document_sort: {
         expires: 'Expiring first',

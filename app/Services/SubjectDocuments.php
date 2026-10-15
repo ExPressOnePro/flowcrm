@@ -6,19 +6,19 @@ use App\Enums\DocumentState;
 use App\Models\Document;
 use App\Models\DocumentFile;
 use App\Models\DocumentType;
-use App\Models\Vehicle;
+use App\Models\Contracts\HasDocuments;
 use App\Support\OrganizationTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
-class VehicleDocuments
+class SubjectDocuments
 {
     /**
      * @return Collection<int, Document>
      */
-    public function current(Vehicle $vehicle): Collection
+    public function current(HasDocuments $subject): Collection
     {
-        return $vehicle->documents()
+        return $subject->documents()
             ->active()
             ->with(['type', 'files', 'createdBy:id,first_name,last_name'])
             ->orderByRaw('expires_on IS NULL')
@@ -32,13 +32,12 @@ class VehicleDocuments
      *
      * @return Collection<int, DocumentType>
      */
-    public function missingMandatory(Vehicle $vehicle, ?Collection $current = null): Collection
+    public function missingMandatory(HasDocuments $subject, ?Collection $current = null): Collection
     {
-        $current ??= $vehicle->documents()->active()->get(['id', 'document_type_id']);
+        $current ??= $subject->documents()->active()->get(['id', 'document_type_id']);
         $present = $current->pluck('document_type_id')->unique()->all();
 
-        return DocumentType::query()
-            ->forVehicleCategory($vehicle->type->category)
+        return $subject->applicableDocumentTypes()
             ->where('is_active', true)
             ->where('is_mandatory', true)
             ->whereNotIn('id', $present)
@@ -47,14 +46,14 @@ class VehicleDocuments
     }
 
     /**
-     * Short list for the vehicle header: what is expired, expiring or missing.
+     * Short list for the card header: what is expired, expiring or missing.
      *
      * @return array{expired: list<array{id: int, name: string, expires_on: string|null}>, expiring: list<array{id: int, name: string, expires_on: string|null, days_left: int|null}>, missing: list<string>}
      */
-    public function summary(Vehicle $vehicle): array
+    public function summary(HasDocuments $subject): array
     {
         $today = OrganizationTime::today();
-        $current = $vehicle->documents()->active()->with('type:id,name')->get();
+        $current = $subject->documents()->active()->with('type:id,name')->get();
 
         $byState = fn (DocumentState $state) => $current
             ->filter(fn (Document $document) => $document->state($today) === $state)
@@ -71,7 +70,7 @@ class VehicleDocuments
         return [
             'expired' => $byState(DocumentState::Expired),
             'expiring' => $byState(DocumentState::Expiring),
-            'missing' => $this->missingMandatory($vehicle, $current)->pluck('name')->all(),
+            'missing' => $this->missingMandatory($subject, $current)->pluck('name')->all(),
         ];
     }
 

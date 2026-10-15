@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Contracts\HasDocuments;
 use App\Models\Document;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -26,14 +27,18 @@ class DocumentPolicy
         return $user->can('documents.view') && $this->canSeeSubject($user, $document);
     }
 
-    public function create(User $user, ?Vehicle $vehicle = null): bool
+    public function create(User $user, ?HasDocuments $subject = null): bool
     {
         if (! $user->can('documents.create')) {
             return false;
         }
 
-        return $vehicle === null
-            || (! $vehicle->trashed() && $this->branchAccess->canSeeBranch($user, $vehicle->branch_id));
+        if ($subject === null) {
+            return true;
+        }
+
+        return ! ($subject instanceof Vehicle && $subject->trashed())
+            && $this->branchAccess->canSeeBranch($user, $subject->documentBranchId());
     }
 
     public function update(User $user, Document $document): bool
@@ -61,7 +66,7 @@ class DocumentPolicy
     {
         $subject = $document->documentable;
 
-        return $subject instanceof Vehicle
-            && $this->branchAccess->canSeeBranch($user, $subject->branch_id);
+        return $subject instanceof HasDocuments
+            && $this->branchAccess->canSeeBranch($user, $subject->documentBranchId());
     }
 }

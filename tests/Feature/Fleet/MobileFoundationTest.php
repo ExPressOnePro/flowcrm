@@ -336,12 +336,19 @@ class MobileFoundationTest extends TestCase
         $this->actingAs($this->owner)
             ->get(route('waybills.index'))
             ->assertOk()
+            ->assertInertia(fn ($page) => $page->component('waybills/index'));
+
+        $this->actingAs($this->owner)
+            ->get(route('maintenance.index'))
+            ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('placeholders/module')
-                ->where('stage', 5));
+                ->where('stage', 7));
 
         $employee = addOrganizationMember($this->organization, 'Employee');
         $this->actingAs($employee)->get(route('documents.index'))->assertForbidden();
+        $this->actingAs($employee)->get(route('waybills.index'))->assertForbidden();
+        $this->actingAs($employee)->get(route('drivers.index'))->assertForbidden();
     }
 
     public function test_pwa_manifest_and_service_worker_are_static_only(): void

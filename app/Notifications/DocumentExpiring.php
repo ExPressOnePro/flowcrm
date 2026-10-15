@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Contracts\HasDocuments;
 use App\Models\Document;
 use App\Models\Vehicle;
 use App\Notifications\Channels\OrganizationDatabaseChannel;
@@ -45,22 +46,23 @@ class DocumentExpiring extends Notification implements BelongsToOrganization
     }
 
     /**
-     * @return array{document_id: int, document_type: string, vehicle_id: int|null, plate_number: string|null, expires_on: string|null, days_left: int, url: string}
+     * `plate_number` is kept for reminders stored before drivers had documents.
+     *
+     * @return array{document_id: int, document_type: string, subject: string|null, subject_label: string|null, plate_number: string|null, expires_on: string|null, days_left: int, url: string}
      */
     public static function payload(Document $document, int $daysLeft): array
     {
-        $vehicle = $document->documentable;
+        $subject = $document->documentable;
 
         return [
             'document_id' => $document->id,
             'document_type' => $document->type->name,
-            'vehicle_id' => $vehicle instanceof Vehicle ? $vehicle->id : null,
-            'plate_number' => $vehicle instanceof Vehicle ? $vehicle->plate_number : null,
+            'subject' => $subject instanceof HasDocuments ? $subject->documentSubject()->value : null,
+            'subject_label' => $subject instanceof HasDocuments ? $subject->documentLabel() : null,
+            'plate_number' => $subject instanceof Vehicle ? $subject->plate_number : null,
             'expires_on' => $document->expires_on?->toDateString(),
             'days_left' => $daysLeft,
-            'url' => $vehicle instanceof Vehicle
-                ? route('vehicles.show', ['vehicle' => $vehicle->id, 'tab' => 'documents'], false)
-                : route('documents.index', [], false),
+            'url' => $subject instanceof HasDocuments ? $subject->documentsUrl() : route('documents.index', [], false),
         ];
     }
 }

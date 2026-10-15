@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\DocumentState;
+use App\Enums\DocumentSubject;
+use App\Enums\DriverStatus;
 use App\Enums\VehicleStatus;
 use App\Models\Concerns\BelongsToOrganization;
 use App\Support\OrganizationTime;
@@ -177,11 +179,11 @@ class Document extends Model
      */
     public function scopeVisibleTo(Builder $query, User $user): void
     {
-        $query->whereHasMorph('documentable', [Vehicle::class], fn (Builder $query) => $query->visibleTo($user));
+        $query->whereHasMorph('documentable', [Vehicle::class, Driver::class], fn (Builder $query) => $query->visibleTo($user));
     }
 
     /**
-     * Excludes documents of decommissioned vehicles from reminders and counters.
+     * Excludes documents of decommissioned vehicles and inactive drivers from reminders and counters.
      *
      * @param  Builder<Document>  $query
      */
@@ -189,8 +191,20 @@ class Document extends Model
     {
         $query->whereHasMorph(
             'documentable',
-            [Vehicle::class],
-            fn (Builder $query) => $query->where('status', '!=', VehicleStatus::Decommissioned->value),
+            [Vehicle::class, Driver::class],
+            fn (Builder $query, string $type) => $type === Driver::class
+                ? $query->where('status', DriverStatus::Active->value)
+                : $query->where('status', '!=', VehicleStatus::Decommissioned->value),
         );
+    }
+
+    /**
+     * @param  Builder<Document>  $query
+     */
+    public function scopeForSubject(Builder $query, DocumentSubject $subject): void
+    {
+        $model = $subject === DocumentSubject::Driver ? new Driver : new Vehicle;
+
+        $query->where('documentable_type', $model->getMorphClass());
     }
 }

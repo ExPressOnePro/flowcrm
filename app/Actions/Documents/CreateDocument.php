@@ -3,10 +3,10 @@
 namespace App\Actions\Documents;
 
 use App\Enums\DocumentSubject;
+use App\Models\Contracts\HasDocuments;
 use App\Models\Document;
 use App\Models\DocumentType;
 use App\Models\User;
-use App\Models\Vehicle;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +25,7 @@ class CreateDocument
      */
     public function execute(
         User $actor,
-        Vehicle $vehicle,
+        HasDocuments $subject,
         array $data,
         array $files = [],
         ?string $idempotencyKey = null,
@@ -42,20 +42,22 @@ class CreateDocument
 
         $type = DocumentType::query()->findOrFail($data['document_type_id']);
 
-        if ($type->subject !== DocumentSubject::Vehicle || ! $type->appliesToCategory($vehicle->type->category)) {
+        if (! $subject->applicableDocumentTypes()->whereKey($type->id)->exists()) {
             throw ValidationException::withMessages([
-                'document_type_id' => __('This document type does not apply to the vehicle.'),
+                'document_type_id' => $subject->documentSubject() === DocumentSubject::Driver
+                    ? __('This document type does not apply to drivers.')
+                    : __('This document type does not apply to the vehicle.'),
             ]);
         }
 
-        if ($replaces !== null && ($replaces->isArchived() || $replaces->document_type_id !== $type->id || ! $replaces->documentable()->is($vehicle))) {
+        if ($replaces !== null && ($replaces->isArchived() || $replaces->document_type_id !== $type->id || ! $replaces->documentable()->is($subject))) {
             throw ValidationException::withMessages([
                 'replaces_id' => __('Only a current document of the same type can be renewed.'),
             ]);
         }
 
         try {
-            return $this->create($actor, $vehicle, $data, $files, $idempotencyKey, $replaces, $type);
+            return $this->create($actor, $subject, $data, $files, $idempotencyKey, $replaces, $type);
         } catch (UniqueConstraintViolationException $exception) {
             if ($idempotencyKey === null) {
                 throw $exception;
@@ -71,14 +73,14 @@ class CreateDocument
      */
     private function create(
         User $actor,
-        Vehicle $vehicle,
+        HasDocuments $subject,
         array $data,
         array $files,
         ?string $idempotencyKey,
         ?Document $replaces,
         DocumentType $type,
     ): Document {
-        return DB::transaction(function () use ($actor, $vehicle, $data, $files, $idempotencyKey, $replaces, $type): Document {
+        return DB::transaction(function () use ($actor, $subject, $data, $files, $idempotencyKey, $replaces, $type): Document {
             $document = new Document([
                 'document_type_id' => $type->id,
                 'number' => $data['number'] ?? null,
@@ -89,7 +91,7 @@ class CreateDocument
                 'created_by' => $actor->id,
                 'idempotency_key' => $idempotencyKey,
             ]);
-            $document->documentable()->associate($vehicle);
+            $document->documentable()->associate($subject);
             $document->save();
 
             $this->storeFiles->execute($document, $files, $actor);

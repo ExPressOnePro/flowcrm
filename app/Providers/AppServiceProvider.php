@@ -9,6 +9,7 @@ use App\Models\Deal;
 use App\Models\Document;
 use App\Models\DocumentFile;
 use App\Models\DocumentType;
+use App\Models\Driver;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Lead;
@@ -23,6 +24,7 @@ use App\Models\Vehicle;
 use App\Models\VehicleCoupling;
 use App\Models\VehicleStatusChange;
 use App\Models\VehicleType;
+use App\Models\Waybill;
 use App\Support\BranchAccess;
 use App\Support\CurrentOrganization;
 use Carbon\CarbonImmutable;
@@ -83,6 +85,8 @@ class AppServiceProvider extends ServiceProvider
         'document_type' => DocumentType::class,
         'document' => Document::class,
         'document_file' => DocumentFile::class,
+        'driver' => Driver::class,
+        'waybill' => Waybill::class,
         'role' => Role::class,
         'permission' => Permission::class,
     ];

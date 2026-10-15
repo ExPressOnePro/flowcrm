@@ -37,6 +37,7 @@ export type DocumentListItem = DocumentItem & {
         name: string;
         branch: string | null;
     } | null;
+    driver: { id: number; name: string; branch: string | null } | null;
 };
 
 export type DocumentTypeOption = {
@@ -57,7 +58,7 @@ export type DocumentSummary = {
     missing: string[];
 };
 
-export type VehicleDocumentsPayload = {
+export type SubjectDocumentsPayload = {
     items: DocumentItem[];
     missing: { id: number; name: string }[];
     archived_count: number;

@@ -4,11 +4,11 @@ namespace App\Services;
 
 use App\Enums\OrganizationUserStatus;
 use App\Enums\UserStatus;
+use App\Models\Contracts\HasDocuments;
 use App\Models\Document;
 use App\Models\DocumentAlert;
 use App\Models\Organization;
 use App\Models\User;
-use App\Models\Vehicle;
 use App\Notifications\DocumentExpiring;
 use App\Notifications\DocumentExpiryDigest;
 use App\Support\BranchAccess;
@@ -59,7 +59,7 @@ class DocumentExpiryNotifier
                 ->forOperationalSubjects()
                 ->whereNotNull('expires_on')
                 ->where('expires_on', '<=', $today->addDays(max(DocumentAlert::THRESHOLDS))->toDateString())
-                ->with(['type:id,name', 'documentable' => fn ($query) => $query->select('id', 'plate_number', 'branch_id', 'make', 'model')])
+                ->with(['type:id,name', 'documentable'])
                 ->orderBy('expires_on')
                 ->get();
 
@@ -72,10 +72,10 @@ class DocumentExpiryNotifier
                 }
 
                 $sent++;
-                $vehicle = $document->documentable;
+                $subject = $document->documentable;
 
                 foreach ($recipients as $user) {
-                    if (! $vehicle instanceof Vehicle || ! $this->branchAccess->canSeeBranch($user, $vehicle->branch_id)) {
+                    if (! $subject instanceof HasDocuments || ! $this->branchAccess->canSeeBranch($user, $subject->documentBranchId())) {
                         continue;
                     }
 

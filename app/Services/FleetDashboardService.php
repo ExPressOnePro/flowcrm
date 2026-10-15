@@ -3,14 +3,17 @@
 namespace App\Services;
 
 use App\Enums\DocumentState;
+use App\Enums\DocumentSubject;
 use App\Enums\TaskStatus;
 use App\Enums\VehicleStatus;
+use App\Enums\WaybillStatus;
 use App\Models\Document;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleCoupling;
 use App\Models\VehicleStatusChange;
+use App\Models\Waybill;
 use App\Support\OrganizationTime;
 use Illuminate\Support\Carbon;
 
@@ -65,6 +68,44 @@ class FleetDashboardService
     }
 
     /**
+     * Open trips first, then the most recently planned ones.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function recentWaybills(User $user, int $limit = 5): array
+    {
+        return Waybill::query()
+            ->visibleTo($user)
+            ->where('status', '!=', WaybillStatus::Cancelled->value)
+            ->with(['vehicle:id,plate_number,deleted_at', 'trailer:id,plate_number,deleted_at', 'driver:id,last_name,first_name,middle_name', 'branch:id,name'])
+            ->orderByRaw('CASE status WHEN ? THEN 0 ELSE 1 END', [WaybillStatus::Issued->value])
+            ->orderByDesc('planned_departure_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->map(fn (Waybill $waybill) => WaybillPresenter::item($waybill))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{open: int, overdue: int, closed_today: int}
+     */
+    public function waybills(User $user): array
+    {
+        $startOfDay = OrganizationTime::today()->utc();
+
+        return [
+            'open' => Waybill::query()->visibleTo($user)->open()->count(),
+            'overdue' => Waybill::query()->visibleTo($user)->returnOverdue()->count(),
+            'closed_today' => Waybill::query()->visibleTo($user)
+                ->where('status', WaybillStatus::Closed->value)
+                ->where('closed_at', '>=', $startOfDay)
+                ->count(),
+        ];
+    }
+
+    /**
      * Vehicles that need a decision: expired documents, under repair, or without a recent odometer reading.
      *
      * @return list<array<string, mixed>>
@@ -74,6 +115,7 @@ class FleetDashboardService
         $expiredDocuments = $withDocuments
             ? Document::query()
                 ->visibleTo($user)
+                ->forSubject(DocumentSubject::Vehicle)
                 ->forOperationalSubjects()
                 ->inState(DocumentState::Expired, OrganizationTime::today())
                 ->with(['type:id,name', 'documentable' => fn ($query) => $query->select('id', 'plate_number', 'make', 'model', 'status')])

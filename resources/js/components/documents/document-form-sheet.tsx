@@ -15,8 +15,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useT } from '@/lib/i18n';
 import { newIdempotencyKey } from '@/lib/idempotency';
 import documentRoutes from '@/routes/documents';
-import vehicleDocuments from '@/routes/vehicles/documents';
 import type { DocumentItem, DocumentTypeOption } from '@/types/documents';
+import { ownerStoreUrl } from './owner';
+import type { DocumentOwner } from './owner';
 
 export type DocumentFormMode =
     | { kind: 'create'; typeId?: number }
@@ -77,13 +78,13 @@ function initialData(mode: DocumentFormMode): FormData {
  */
 export function DocumentFormSheet({
     mode,
-    vehicleId,
+    owner,
     types,
     onClose,
     onDone,
 }: {
     mode: DocumentFormMode;
-    vehicleId: number;
+    owner: DocumentOwner;
     types: DocumentTypeOption[];
     onClose: () => void;
     onDone: () => void;
@@ -145,7 +146,7 @@ export function DocumentFormSheet({
             return;
         }
 
-        form.post(vehicleDocuments.store.url(vehicleId), {
+        form.post(ownerStoreUrl(owner), {
             ...options,
             forceFormData: true,
         });

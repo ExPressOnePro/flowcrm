@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\Documents;
 
+use App\Models\Contracts\HasDocuments;
 use App\Models\Document;
 use App\Models\DocumentType;
-use App\Models\Vehicle;
 use App\Support\CurrentOrganization;
 use App\Support\OrganizationTime;
 use Illuminate\Foundation\Http\FormRequest;
@@ -16,10 +16,10 @@ class StoreDocumentRequest extends FormRequest
 
     public function authorize(): bool
     {
-        $vehicle = $this->route('vehicle');
+        $subject = $this->route('vehicle') ?? $this->route('driver');
 
-        return $vehicle instanceof Vehicle
-            && ($this->user()?->can('create', [Document::class, $vehicle]) ?? false);
+        return $subject instanceof HasDocuments
+            && ($this->user()?->can('create', [Document::class, $subject]) ?? false);
     }
 
     /**

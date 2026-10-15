@@ -7,16 +7,10 @@ import {
     Paperclip,
 } from 'lucide-react';
 import { useState } from 'react';
-import {
-    DocumentFormSheet
-    
-} from '@/components/documents/document-form-sheet';
-import type {DocumentFormMode} from '@/components/documents/document-form-sheet';
-import {
-    DocumentSheet
-    
-} from '@/components/documents/document-sheet';
-import type {DocumentPermissions} from '@/components/documents/document-sheet';
+import { DocumentFormSheet } from '@/components/documents/document-form-sheet';
+import type { DocumentFormMode } from '@/components/documents/document-form-sheet';
+import { DocumentSheet } from '@/components/documents/document-sheet';
+import type { DocumentPermissions } from '@/components/documents/document-sheet';
 import { DocumentStateBadge } from '@/components/documents/document-state-badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -24,8 +18,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useJson } from '@/hooks/use-json';
 import { useFormat } from '@/lib/format';
 import { useT } from '@/lib/i18n';
-import vehicleDocuments from '@/routes/vehicles/documents';
-import type { DocumentItem, VehicleDocumentsPayload } from '@/types/documents';
+import type { DocumentItem, SubjectDocumentsPayload } from '@/types/documents';
+import { ownerDocumentsUrl } from './owner';
+import type { DocumentOwner } from './owner';
 
 function DocumentRow({
     document,
@@ -79,13 +74,13 @@ function DocumentRow({
     );
 }
 
-export function VehicleDocuments({
-    vehicleId,
-    vehicleArchived,
+export function SubjectDocuments({
+    owner,
+    readOnly,
     can,
 }: {
-    vehicleId: number;
-    vehicleArchived: boolean;
+    owner: DocumentOwner;
+    readOnly: boolean;
     can: DocumentPermissions & { create: boolean };
 }) {
     const { t } = useT();
@@ -93,20 +88,16 @@ export function VehicleDocuments({
     const [showArchive, setShowArchive] = useState(false);
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [form, setForm] = useState<DocumentFormMode | null>(null);
-    const current = useJson<VehicleDocumentsPayload>(
-        vehicleDocuments.index.url(vehicleId),
+    const current = useJson<SubjectDocumentsPayload>(
+        ownerDocumentsUrl(owner),
         refreshKey,
     );
     const archive = useJson<{ items: DocumentItem[] }>(
-        showArchive
-            ? vehicleDocuments.index.url(vehicleId, {
-                  query: { archived: 1 },
-              })
-            : null,
+        showArchive ? ownerDocumentsUrl(owner, true) : null,
         refreshKey,
     );
     const data = current.data;
-    const editable = !vehicleArchived;
+    const editable = !readOnly;
     const permissions: DocumentPermissions = editable
         ? can
         : { renew: false, update: false, archive: false, attach: false };
@@ -266,7 +257,7 @@ export function VehicleDocuments({
             {form && (
                 <DocumentFormSheet
                     mode={form}
-                    vehicleId={vehicleId}
+                    owner={owner}
                     types={data.types}
                     onClose={() => setForm(null)}
                     onDone={() => {

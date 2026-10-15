@@ -6,6 +6,7 @@ use App\Models\OdometerReading;
 use App\Models\Vehicle;
 use App\Models\VehicleCoupling;
 use App\Models\VehicleStatusChange;
+use App\Models\Waybill;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -135,7 +136,7 @@ class VehicleTimeline
         return OdometerReading::query()
             ->where('vehicle_id', $vehicle->id)
             ->tap(fn (Builder $query) => $this->window($query, 'recorded_at', $from, $before))
-            ->with('recordedBy:id,first_name,last_name')
+            ->with(['recordedBy:id,first_name,last_name', 'sourceable'])
             ->orderByDesc('recorded_at')
             ->orderByDesc('id')
             ->limit($limit)
@@ -149,6 +150,10 @@ class VehicleTimeline
                 'source' => $reading->source->value,
                 'is_device' => $reading->source->isDeviceReported(),
                 'note' => $reading->note,
+                'waybill' => $reading->sourceable instanceof Waybill ? [
+                    'id' => $reading->sourceable->id,
+                    'number' => $reading->sourceable->number,
+                ] : null,
             ]);
     }
 

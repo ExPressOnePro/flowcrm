@@ -6,6 +6,7 @@ import {
     FileCog,
     FileText,
     History,
+    IdCard,
     LayoutGrid,
     MapPinned,
     Settings2,
@@ -20,6 +21,7 @@ import branches from '@/routes/branches';
 import customers from '@/routes/customers';
 import documentTypes from '@/routes/document-types';
 import documents from '@/routes/documents';
+import drivers from '@/routes/drivers';
 import employees from '@/routes/employees';
 import maintenance from '@/routes/maintenance';
 import operations from '@/routes/operations';
@@ -57,8 +59,14 @@ export const waybillsItem: NavItem = {
     title: 'Waybills',
     href: waybills.index(),
     icon: ClipboardList,
-    permission: 'vehicles.view',
-    stage: 5,
+    permission: 'waybills.view',
+};
+
+export const driversItem: NavItem = {
+    title: 'Drivers',
+    href: drivers.index(),
+    icon: IdCard,
+    permission: 'drivers.view',
 };
 
 /*
@@ -70,8 +78,9 @@ export const navGroups: NavGroup[] = [
         title: 'Fleet',
         items: [
             vehiclesItem,
-            documentsItem,
             waybillsItem,
+            driversItem,
+            documentsItem,
             {
                 title: 'Maintenance',
                 href: maintenance.index(),
@@ -167,8 +176,8 @@ export const navGroups: NavGroup[] = [
 export const bottomNavItems: NavItem[] = [
     dashboardItem,
     vehiclesItem,
-    documentsItem,
     waybillsItem,
+    documentsItem,
 ];
 
 export function useNavPermissions() {

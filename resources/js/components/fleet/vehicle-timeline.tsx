@@ -20,6 +20,7 @@ import { useFormat } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import vehicles from '@/routes/vehicles';
+import waybillRoutes from '@/routes/waybills';
 import type { VehiclePartner } from '@/types/fleet';
 
 type BaseEvent = { key: string; at: string; actor: string | null };
@@ -44,6 +45,7 @@ type TimelineEvent =
           source: string;
           is_device: boolean;
           note: string | null;
+          waybill: { id: number; number: string | null } | null;
       });
 
 type TimelineResponse = {
@@ -236,7 +238,7 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
                     {event.partner ? (
                         <Link
                             href={vehicles.show(event.partner.id)}
-                            className="font-mono font-semibold underline-offset-4 hover:underline"
+                            className="-my-3 inline-flex min-h-11 items-center font-mono font-semibold underline-offset-4 hover:underline md:my-0 md:min-h-0"
                         >
                             {event.partner.plate_number}
                         </Link>
@@ -262,6 +264,14 @@ function TimelineRow({ event }: { event: TimelineEvent }) {
                     <span className="text-muted-foreground">
                         · {label('odometer_source', event.source)}
                     </span>
+                    {event.waybill && (
+                        <Link
+                            href={waybillRoutes.show.url(event.waybill.id)}
+                            className="-my-3 inline-flex min-h-11 items-center font-mono underline-offset-4 hover:underline md:my-0 md:min-h-0"
+                        >
+                            {event.waybill.number ?? t('Waybill')}
+                        </Link>
+                    )}
                 </span>
             );
             body = event.note;
