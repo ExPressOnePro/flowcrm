@@ -1,5 +1,7 @@
 export type User = {
     id: number;
+    first_name: string;
+    last_name: string;
     name: string;
     email: string;
     avatar?: string;
@@ -12,6 +14,14 @@ export type User = {
 
 export type Auth = {
     user: User;
+};
+
+export type Organization = {
+    id: number;
+    name: string;
+    slug: string;
+    currency: string;
+    timezone: string;
 };
 
 /* @chisel-passkeys */

@@ -21,7 +21,7 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen()
     {
-        $user = User::factory()->create();
+        $user = createUserWithOrganization();
 
         $response = $this->post(route('login.store'), [
             'email' => $user->email,
@@ -41,7 +41,12 @@ class AuthenticationTest extends TestCase
             'confirmPassword' => true,
         ]);
 
-        $user = User::factory()->withTwoFactor()->create();
+        $user = createUserWithOrganization();
+        $user->forceFill([
+            'two_factor_secret' => encrypt('secret'),
+            'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
+            'two_factor_confirmed_at' => now(),
+        ])->save();
 
         $response = $this->post(route('login'), [
             'email' => $user->email,
@@ -55,7 +60,7 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_not_authenticate_with_invalid_password()
     {
-        $user = User::factory()->create();
+        $user = createUserWithOrganization();
 
         $this->post(route('login.store'), [
             'email' => $user->email,
@@ -67,7 +72,7 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_logout()
     {
-        $user = User::factory()->create();
+        $user = createUserWithOrganization();
 
         $response = $this->actingAs($user)->post(route('logout'));
 
@@ -78,7 +83,7 @@ class AuthenticationTest extends TestCase
 
     public function test_users_are_rate_limited()
     {
-        $user = User::factory()->create();
+        $user = createUserWithOrganization();
 
         RateLimiter::increment(md5('login'.implode('|', [$user->email, '127.0.0.1'])), amount: 5);
 

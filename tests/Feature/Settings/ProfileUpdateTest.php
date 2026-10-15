@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Settings;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -12,7 +11,7 @@ class ProfileUpdateTest extends TestCase
 
     public function test_profile_page_is_displayed()
     {
-        $user = User::factory()->create();
+        $user = createUserWithOrganization();
 
         $response = $this
             ->actingAs($user)
@@ -23,12 +22,13 @@ class ProfileUpdateTest extends TestCase
 
     public function test_profile_information_can_be_updated()
     {
-        $user = User::factory()->create();
+        $user = createUserWithOrganization();
 
         $response = $this
             ->actingAs($user)
             ->patch(route('profile.update'), [
-                'name' => 'Test User',
+                'first_name' => 'Test',
+                'last_name' => 'User',
                 'email' => 'test@example.com',
             ]);
 
@@ -38,6 +38,8 @@ class ProfileUpdateTest extends TestCase
 
         $user->refresh();
 
+        $this->assertSame('Test', $user->first_name);
+        $this->assertSame('User', $user->last_name);
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
@@ -45,12 +47,13 @@ class ProfileUpdateTest extends TestCase
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
     {
-        $user = User::factory()->create();
+        $user = createUserWithOrganization();
 
         $response = $this
             ->actingAs($user)
             ->patch(route('profile.update'), [
-                'name' => 'Test User',
+                'first_name' => 'Test',
+                'last_name' => 'User',
                 'email' => $user->email,
             ]);
 
@@ -63,7 +66,7 @@ class ProfileUpdateTest extends TestCase
 
     public function test_user_can_delete_their_account()
     {
-        $user = User::factory()->create();
+        $user = createUserWithOrganization();
 
         $response = $this
             ->actingAs($user)
@@ -81,7 +84,7 @@ class ProfileUpdateTest extends TestCase
 
     public function test_correct_password_must_be_provided_to_delete_account()
     {
-        $user = User::factory()->create();
+        $user = createUserWithOrganization();
 
         $response = $this
             ->actingAs($user)
