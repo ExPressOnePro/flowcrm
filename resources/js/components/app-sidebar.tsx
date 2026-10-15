@@ -2,11 +2,11 @@ import { Link } from '@inertiajs/react';
 import {
     Building2,
     CheckSquare,
-    FileText,
-    Handshake,
     LayoutGrid,
+    MapPinned,
     Settings2,
-    Target,
+    Shapes,
+    Truck,
     Users,
     UsersRound,
 } from 'lucide-react';
@@ -23,13 +23,13 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import branches from '@/routes/branches';
 import customers from '@/routes/customers';
-import deals from '@/routes/deals';
 import employees from '@/routes/employees';
-import invoices from '@/routes/invoices';
-import leads from '@/routes/leads';
 import settings from '@/routes/settings';
 import tasks from '@/routes/tasks';
+import vehicleTypes from '@/routes/vehicle-types';
+import vehicles from '@/routes/vehicles';
 import type { NavGroup, NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -37,27 +37,35 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+        permission: 'dashboard.view',
     },
 ];
 
+/*
+ * Leads, deals and invoices stay routable but are hidden from the menu
+ * while the product is focused on fleet management.
+ */
 const navGroups: NavGroup[] = [
     {
-        title: 'CRM',
+        title: 'Fleet',
         items: [
             {
-                title: 'Customers',
-                href: customers.index(),
-                icon: Users,
+                title: 'Vehicles',
+                href: vehicles.index(),
+                icon: Truck,
+                permission: 'vehicles.view',
             },
             {
-                title: 'Leads',
-                href: leads.index(),
-                icon: Target,
+                title: 'Branches',
+                href: branches.index(),
+                icon: MapPinned,
+                permission: 'branches.manage',
             },
             {
-                title: 'Deals',
-                href: deals.index(),
-                icon: Handshake,
+                title: 'Vehicle types',
+                href: vehicleTypes.index(),
+                icon: Shapes,
+                permission: 'vehicle_types.manage',
             },
         ],
     },
@@ -68,16 +76,18 @@ const navGroups: NavGroup[] = [
                 title: 'Tasks',
                 href: tasks.index(),
                 icon: CheckSquare,
+                permission: 'tasks.view',
             },
         ],
     },
     {
-        title: 'Finance',
+        title: 'Commerce',
         items: [
             {
-                title: 'Invoices',
-                href: invoices.index(),
-                icon: FileText,
+                title: 'Customers',
+                href: customers.index(),
+                icon: Users,
+                permission: 'customers.view',
             },
         ],
     },
@@ -88,11 +98,13 @@ const navGroups: NavGroup[] = [
                 title: 'Employees',
                 href: employees.index(),
                 icon: UsersRound,
+                permission: 'employees.view',
             },
             {
                 title: 'Settings',
                 href: settings.organization(),
                 icon: Settings2,
+                permission: 'settings.view',
             },
         ],
     },

@@ -2,12 +2,35 @@
 
 namespace App\Providers;
 
+use App\Models\Branch;
+use App\Models\Contact;
+use App\Models\Customer;
+use App\Models\Deal;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
+use App\Models\Lead;
+use App\Models\OdometerReading;
+use App\Models\Organization;
+use App\Models\Payment;
+use App\Models\Pipeline;
+use App\Models\PipelineStage;
+use App\Models\Task;
+use App\Models\User;
+use App\Models\Vehicle;
+use App\Models\VehicleCoupling;
+use App\Models\VehicleStatusChange;
+use App\Models\VehicleType;
+use App\Support\BranchAccess;
 use App\Support\CurrentOrganization;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(CurrentOrganization::class);
+        $this->app->scoped(BranchAccess::class);
     }
 
     /**
@@ -25,7 +49,37 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        Relation::enforceMorphMap(self::MORPH_MAP);
     }
+
+    /**
+     * Stored in polymorphic `*_type` columns; renaming an alias requires a data migration.
+     *
+     * @var array<string, class-string<Model>>
+     */
+    public const MORPH_MAP = [
+        'user' => User::class,
+        'organization' => Organization::class,
+        'customer' => Customer::class,
+        'contact' => Contact::class,
+        'lead' => Lead::class,
+        'deal' => Deal::class,
+        'pipeline' => Pipeline::class,
+        'pipeline_stage' => PipelineStage::class,
+        'task' => Task::class,
+        'invoice' => Invoice::class,
+        'invoice_item' => InvoiceItem::class,
+        'payment' => Payment::class,
+        'branch' => Branch::class,
+        'vehicle_type' => VehicleType::class,
+        'vehicle' => Vehicle::class,
+        'vehicle_coupling' => VehicleCoupling::class,
+        'vehicle_status_change' => VehicleStatusChange::class,
+        'odometer_reading' => OdometerReading::class,
+        'role' => Role::class,
+        'permission' => Permission::class,
+    ];
 
     /**
      * Configure default behaviors for production-ready applications.

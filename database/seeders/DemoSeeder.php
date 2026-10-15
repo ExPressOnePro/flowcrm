@@ -190,11 +190,7 @@ class DemoSeeder extends Seeder
                     'created_by' => $owner->id,
                     'assigned_to' => fake()->randomElement($assignees),
                     'due_at' => fake()->dateTimeBetween('-2 days', '+10 days'),
-                    'taskable_type' => match ($related) {
-                        'customer' => Customer::class,
-                        'deal' => Deal::class,
-                        default => null,
-                    },
+                    'taskable_type' => $related === 'none' ? null : $related,
                     'taskable_id' => match ($related) {
                         'customer' => $customers->random()->id,
                         'deal' => $deals->random()->id,

@@ -94,6 +94,7 @@ class User extends Authenticatable implements PasskeyUser
             ->withPivot([
                 'job_title',
                 'department',
+                'branch_id',
                 'status',
                 'joined_at',
             ])

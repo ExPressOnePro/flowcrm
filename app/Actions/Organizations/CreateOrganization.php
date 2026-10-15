@@ -3,6 +3,7 @@
 namespace App\Actions\Organizations;
 
 use App\Actions\CRM\EnsureDefaultPipeline;
+use App\Actions\Fleet\EnsureDefaultFleetCatalog;
 use App\Enums\OrganizationStatus;
 use App\Enums\OrganizationUserStatus;
 use App\Models\Organization;
@@ -17,6 +18,7 @@ class CreateOrganization
     public function __construct(
         private EnsureOrganizationRoles $ensureOrganizationRoles,
         private EnsureDefaultPipeline $ensureDefaultPipeline,
+        private EnsureDefaultFleetCatalog $ensureDefaultFleetCatalog,
     ) {}
 
     /**
@@ -47,6 +49,7 @@ class CreateOrganization
 
             $this->ensureOrganizationRoles->execute($organization);
             $this->ensureDefaultPipeline->execute($organization);
+            $this->ensureDefaultFleetCatalog->execute($organization);
 
             app(PermissionRegistrar::class)->setPermissionsTeamId($organization->id);
 

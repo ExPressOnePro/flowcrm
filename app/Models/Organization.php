@@ -66,10 +66,26 @@ class Organization extends Model
             ->withPivot([
                 'job_title',
                 'department',
+                'branch_id',
                 'status',
                 'joined_at',
             ])
             ->withTimestamps();
+    }
+
+    public function branches(): HasMany
+    {
+        return $this->hasMany(Branch::class);
+    }
+
+    public function vehicleTypes(): HasMany
+    {
+        return $this->hasMany(VehicleType::class);
+    }
+
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(Vehicle::class);
     }
 
     public function customers(): HasMany

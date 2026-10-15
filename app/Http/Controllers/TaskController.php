@@ -17,6 +17,7 @@ use App\Models\Lead;
 use App\Models\Task;
 use App\Models\User;
 use App\Support\CurrentOrganization;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -269,15 +270,15 @@ class TaskController extends Controller
         ];
     }
 
-    private function taskableAlias(?string $class): ?string
+    private function taskableAlias(?string $type): ?string
     {
-        return match ($class) {
-            Customer::class => 'customer',
-            Lead::class => 'lead',
-            Deal::class => 'deal',
-            Invoice::class => 'invoice',
-            default => null,
-        };
+        if ($type === null) {
+            return null;
+        }
+
+        $alias = Relation::getMorphAlias($type);
+
+        return in_array($alias, ['customer', 'lead', 'deal', 'invoice'], true) ? $alias : null;
     }
 
     /**

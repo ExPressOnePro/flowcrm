@@ -63,6 +63,19 @@ class RolesAndPermissionsSeeder extends Seeder
 
         'settings.view',
         'settings.update',
+
+        'vehicles.view',
+        'vehicles.create',
+        'vehicles.update',
+        'vehicles.change_status',
+        'vehicles.archive',
+        'vehicles.couple',
+        'odometer.record',
+        'fleet.view_all_branches',
+        'branches.manage',
+        'vehicle_types.manage',
+
+        'audit.view',
     ];
 
     /**

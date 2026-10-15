@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\TaskStatus;
 use App\Models\Customer;
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -58,9 +59,14 @@ class TaskTest extends TestCase
         $response->assertRedirect(route('tasks.show', $task));
         $this->assertDatabaseHas('tasks', [
             'title' => 'Prepare proposal',
-            'taskable_type' => Customer::class,
+            'taskable_type' => 'customer',
             'taskable_id' => $customer->id,
         ]);
+        $this->assertTrue($customer->tasks()->whereKey($task->id)->exists());
+
+        $this->actingAs($user)
+            ->get(route('tasks.edit', $task))
+            ->assertInertia(fn ($page) => $page->where('task.taskable_type', 'customer'));
     }
 
     public function test_users_can_mark_a_task_completed(): void
@@ -87,7 +93,7 @@ class TaskTest extends TestCase
         $owner = createUserWithOrganization();
         $organization = $owner->organizations()->firstOrFail();
 
-        $employee = \App\Models\User::factory()->create([
+        $employee = User::factory()->create([
             'email' => 'task-employee@example.com',
         ]);
 

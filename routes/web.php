@@ -4,6 +4,12 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DealController;
+use App\Http\Controllers\Fleet\BranchController;
+use App\Http\Controllers\Fleet\OdometerReadingController;
+use App\Http\Controllers\Fleet\VehicleController;
+use App\Http\Controllers\Fleet\VehicleCouplingController;
+use App\Http\Controllers\Fleet\VehicleStatusController;
+use App\Http\Controllers\Fleet\VehicleTypeController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\LeadController;
 use App\Http\Controllers\TaskController;
@@ -39,6 +45,27 @@ Route::middleware(['auth', 'verified', 'organization'])->group(function () {
         ->name('invoices.send');
     Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'storePayment'])
         ->name('invoices.payments.store');
+
+    Route::resource('vehicles', VehicleController::class)->withTrashed(['show']);
+    Route::post('vehicles/{vehicle}/restore', [VehicleController::class, 'restore'])
+        ->withTrashed()
+        ->name('vehicles.restore');
+    Route::post('vehicles/{vehicle}/status', VehicleStatusController::class)
+        ->name('vehicles.status');
+    Route::post('vehicles/{vehicle}/couplings', [VehicleCouplingController::class, 'store'])
+        ->name('vehicles.couplings.store');
+    Route::post('vehicles/{vehicle}/couplings/{coupling}/uncouple', [VehicleCouplingController::class, 'destroy'])
+        ->name('vehicles.couplings.uncouple');
+    Route::post('vehicles/{vehicle}/odometer', [OdometerReadingController::class, 'store'])
+        ->name('vehicles.odometer.store');
+
+    Route::get('fleet/branches', [BranchController::class, 'index'])->name('branches.index');
+    Route::post('fleet/branches', [BranchController::class, 'store'])->name('branches.store');
+    Route::put('fleet/branches/{branch}', [BranchController::class, 'update'])->name('branches.update');
+
+    Route::get('fleet/vehicle-types', [VehicleTypeController::class, 'index'])->name('vehicle-types.index');
+    Route::post('fleet/vehicle-types', [VehicleTypeController::class, 'store'])->name('vehicle-types.store');
+    Route::put('fleet/vehicle-types/{vehicle_type}', [VehicleTypeController::class, 'update'])->name('vehicle-types.update');
 
     Route::inertia('employees', 'placeholders/coming-soon')->name('employees.index');
     Route::inertia('settings/organization', 'placeholders/coming-soon')

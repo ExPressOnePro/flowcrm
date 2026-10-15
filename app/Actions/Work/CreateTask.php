@@ -63,6 +63,6 @@ class CreateTask
         $class = $map[$type];
         $model = $class::query()->findOrFail($id);
 
-        return [$class, $model->getKey()];
+        return [$model->getMorphClass(), $model->getKey()];
     }
 }

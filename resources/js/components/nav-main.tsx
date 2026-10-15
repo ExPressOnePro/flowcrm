@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -7,6 +7,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
+import { useT } from '@/lib/i18n';
 import type { NavGroup, NavItem } from '@/types';
 
 export function NavMain({
@@ -16,33 +17,45 @@ export function NavMain({
     items?: NavItem[];
     groups?: NavGroup[];
 }) {
-    const { isCurrentUrl } = useCurrentUrl();
+    const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { t } = useT();
+    const permissions = usePage().props.authPermissions;
+
+    const allowed = (item: NavItem) =>
+        !item.permission || permissions.includes(item.permission);
+
+    const visibleItems = items.filter(allowed);
+    const visibleGroups = groups
+        .map((group) => ({ ...group, items: group.items.filter(allowed) }))
+        .filter((group) => group.items.length > 0);
 
     return (
         <>
-            {items.length > 0 && (
+            {visibleItems.length > 0 && (
                 <SidebarGroup className="px-2 py-0">
                     <SidebarMenu>
-                        {items.map((item) => (
+                        {visibleItems.map((item) => (
                             <NavLink
                                 key={item.title}
                                 item={item}
-                                isActive={isCurrentUrl(item.href)}
+                                title={t(item.title)}
+                                isActive={isCurrentOrParentUrl(item.href)}
                             />
                         ))}
                     </SidebarMenu>
                 </SidebarGroup>
             )}
 
-            {groups.map((group) => (
+            {visibleGroups.map((group) => (
                 <SidebarGroup key={group.title} className="px-2 py-0">
-                    <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+                    <SidebarGroupLabel>{t(group.title)}</SidebarGroupLabel>
                     <SidebarMenu>
                         {group.items.map((item) => (
                             <NavLink
                                 key={item.title}
                                 item={item}
-                                isActive={isCurrentUrl(item.href)}
+                                title={t(item.title)}
+                                isActive={isCurrentOrParentUrl(item.href)}
                             />
                         ))}
                     </SidebarMenu>
@@ -54,9 +67,11 @@ export function NavMain({
 
 function NavLink({
     item,
+    title,
     isActive,
 }: {
     item: NavItem;
+    title: string;
     isActive: boolean;
 }) {
     return (
@@ -64,11 +79,11 @@ function NavLink({
             <SidebarMenuButton
                 asChild
                 isActive={isActive}
-                tooltip={{ children: item.title }}
+                tooltip={{ children: title }}
             >
                 <Link href={item.href} prefetch>
                     {item.icon && <item.icon />}
-                    <span>{item.title}</span>
+                    <span>{title}</span>
                 </Link>
             </SidebarMenuButton>
         </SidebarMenuItem>
