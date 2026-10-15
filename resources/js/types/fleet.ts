@@ -30,6 +30,60 @@ export type VehicleSummary = {
     archived: boolean;
 };
 
+export type VehiclePartner = {
+    id: number;
+    plate_number: string;
+    name: string;
+    archived: boolean;
+} | null;
+
+export type VehicleDetail = VehicleSummary & {
+    vehicle_type_id: number;
+    branch_id: number | null;
+    has_odometer: boolean;
+    responsible: { id: number; name: string; email: string } | null;
+    created_by: string | null;
+    notes: string | null;
+    created_at: string | null;
+    deleted_at: string | null;
+    status_since: string | null;
+    odometer_stale: boolean;
+};
+
+export type ActiveCoupling = {
+    id: number;
+    role: 'tractor' | 'trailer';
+    partner: VehiclePartner;
+    position: number;
+    coupled_at: string;
+    coupled_by: string | null;
+    notes: string | null;
+};
+
+export type LastReading = {
+    value_km: number;
+    recorded_at: string;
+    source: string;
+    is_device: boolean;
+    recorded_by: string | null;
+};
+
+export type CouplingCandidate = {
+    id: number;
+    plate_number: string;
+    name: string;
+    type: string;
+};
+
+export type VehicleCan = {
+    update: boolean;
+    change_status: boolean;
+    couple: boolean;
+    record_odometer: boolean;
+    archive: boolean;
+    view_audit: boolean;
+};
+
 export type VehicleOptions = {
     types: VehicleTypeOption[];
     branches: BranchOption[];

@@ -140,4 +140,35 @@
     body {
         @apply bg-background text-foreground;
     }
+
+    html {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+}
+
+/*
+ * Phones: fields are at least 44px tall for touch, and use 16px text so
+ * iOS Safari does not zoom the page when a field gets focus.
+ * Intentionally unlayered so it wins over size utilities on small screens only.
+ */
+@media (max-width: 767px) {
+    input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='file']),
+    select,
+    textarea {
+        font-size: 16px;
+    }
+
+    input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='file']),
+    select {
+        min-height: 44px;
+    }
+}
+
+@utility pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pt-safe {
+    padding-top: env(safe-area-inset-top);
 }

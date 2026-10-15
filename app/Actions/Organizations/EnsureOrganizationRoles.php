@@ -17,6 +17,7 @@ class EnsureOrganizationRoles
         'Admin' => '*',
         'Sales Manager' => [
             'dashboard.view',
+            'analytics.view',
             'customers.view',
             'customers.create',
             'customers.update',
@@ -44,6 +45,7 @@ class EnsureOrganizationRoles
         ],
         'Sales' => [
             'dashboard.view',
+            'analytics.view',
             'customers.view',
             'customers.create',
             'contacts.view',
@@ -64,6 +66,7 @@ class EnsureOrganizationRoles
         ],
         'Accountant' => [
             'dashboard.view',
+            'analytics.view',
             'customers.view',
             'invoices.view',
             'invoices.create',
@@ -82,6 +85,7 @@ class EnsureOrganizationRoles
         ],
         'Fleet Manager' => [
             'dashboard.view',
+            'analytics.view',
             'customers.view',
             'vehicles.view',
             'vehicles.create',
@@ -131,6 +135,7 @@ class EnsureOrganizationRoles
         ],
         'Viewer' => [
             'dashboard.view',
+            'analytics.view',
             'vehicles.view',
             'fleet.view_all_branches',
             'audit.view',

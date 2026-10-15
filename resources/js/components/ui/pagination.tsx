@@ -28,6 +28,9 @@ export function Pagination({
                 const label = link.label
                     .replace('&laquo;', '‹')
                     .replace('&raquo;', '›');
+                // Phones keep previous / current / next only.
+                const edge = index === 0 || index === links.length - 1;
+                const compact = !edge && !link.active && 'max-sm:hidden';
 
                 if (!link.url) {
                     return (
@@ -35,6 +38,7 @@ export function Pagination({
                             key={`${label}-${index}`}
                             variant="ghost"
                             size="sm"
+                            className={cn(compact)}
                             disabled
                             dangerouslySetInnerHTML={{ __html: label }}
                         />
@@ -46,6 +50,7 @@ export function Pagination({
                         key={`${label}-${index}`}
                         variant={link.active ? 'default' : 'ghost'}
                         size="sm"
+                        className={cn('min-w-11 md:min-w-8', compact)}
                         asChild
                     >
                         <Link

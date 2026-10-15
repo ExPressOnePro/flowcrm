@@ -37,6 +37,13 @@ export function enumLabel(
     );
 }
 
+/** Locale for code running outside the Inertia page context (providers, global handlers). */
+export function documentLocale(): string {
+    return typeof document === 'undefined'
+        ? 'ru'
+        : document.documentElement.lang || 'ru';
+}
+
 export function useLocale(): string {
     return (usePage().props.locale as string | undefined) ?? 'ru';
 }

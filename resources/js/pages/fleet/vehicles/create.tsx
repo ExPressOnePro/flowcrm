@@ -5,6 +5,7 @@ import type { VehicleFormData } from '@/components/fleet/vehicle-form';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { useT } from '@/lib/i18n';
 import { dashboard } from '@/routes';
 import vehicles from '@/routes/vehicles';
@@ -23,8 +24,8 @@ export default function VehiclesCreate({
     defaultBranchId,
 }: Props) {
     const { t } = useT();
-    const { data, setData, post, processing, errors } =
-        useForm<VehicleFormData>({
+    const { data, setData, post, processing, errors, isDirty } =
+        useForm<VehicleFormData>('VehicleCreate', {
             plate_number: '',
             vin: '',
             make: '',
@@ -39,6 +40,8 @@ export default function VehiclesCreate({
             status: 'in_service',
             initial_odometer_km: '',
         });
+
+    useUnsavedChanges(isDirty && !processing);
 
     return (
         <>
@@ -71,7 +74,7 @@ export default function VehiclesCreate({
                         isCreate
                     />
 
-                    <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
                         <Button type="submit" disabled={processing}>
                             {processing && <Spinner />}
                             {t('Register vehicle')}

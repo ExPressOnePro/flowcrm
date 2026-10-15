@@ -181,45 +181,18 @@ export default function BranchesIndex({ branches }: { branches: Branch[] }) {
                 {branches.length === 0 ? (
                     <EmptyState icon={MapPinned} title={t('Branches')} />
                 ) : (
-                    <div className="overflow-x-auto rounded-xl border">
-                        <table className="w-full text-sm">
-                            <thead className="bg-muted/40 text-left text-muted-foreground">
-                                <tr>
-                                    <th className="px-4 py-3 font-medium">
-                                        {t('Name')}
-                                    </th>
-                                    <th className="hidden px-4 py-3 font-medium sm:table-cell">
-                                        {t('City')}
-                                    </th>
-                                    <th className="px-4 py-3 text-right font-medium">
-                                        {t('Vehicles count')}
-                                    </th>
-                                    <th className="px-4 py-3 font-medium">
-                                        {t('Status')}
-                                    </th>
-                                    <th className="px-4 py-3" />
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {branches.map((branch) => (
-                                    <tr key={branch.id} className="border-t">
-                                        <td className="px-4 py-3">
-                                            <div className="font-medium">
+                    <>
+                        <ul className="grid grid-cols-1 gap-3 md:hidden">
+                            {branches.map((branch) => (
+                                <li
+                                    key={branch.id}
+                                    className="flex items-start justify-between gap-3 rounded-xl border p-4"
+                                >
+                                    <div className="min-w-0 space-y-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="font-medium">
                                                 {branch.name}
-                                            </div>
-                                            {branch.code && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    {branch.code}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td className="hidden px-4 py-3 sm:table-cell">
-                                            {branch.city ?? '—'}
-                                        </td>
-                                        <td className="px-4 py-3 text-right tabular-nums">
-                                            {branch.vehicles_count}
-                                        </td>
-                                        <td className="px-4 py-3">
+                                            </span>
                                             <Badge
                                                 variant={
                                                     branch.is_active
@@ -231,22 +204,100 @@ export default function BranchesIndex({ branches }: { branches: Branch[] }) {
                                                     ? t('Active')
                                                     : t('Inactive')}
                                             </Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                aria-label={t('Edit branch')}
-                                                onClick={() => open(branch)}
-                                            >
-                                                <Pencil />
-                                            </Button>
-                                        </td>
+                                        </div>
+                                        <div className="text-sm text-muted-foreground">
+                                            {[branch.code, branch.city]
+                                                .filter(Boolean)
+                                                .join(' · ') || '—'}
+                                        </div>
+                                        <div className="text-sm">
+                                            {t('Vehicles count')}:{' '}
+                                            {branch.vehicles_count}
+                                        </div>
+                                    </div>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        aria-label={t('Edit branch')}
+                                        onClick={() => open(branch)}
+                                    >
+                                        <Pencil />
+                                    </Button>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="hidden overflow-x-auto rounded-xl border md:block">
+                            <table className="w-full text-sm">
+                                <thead className="bg-muted/40 text-left text-muted-foreground">
+                                    <tr>
+                                        <th className="px-4 py-3 font-medium">
+                                            {t('Name')}
+                                        </th>
+                                        <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                                            {t('City')}
+                                        </th>
+                                        <th className="px-4 py-3 text-right font-medium">
+                                            {t('Vehicles count')}
+                                        </th>
+                                        <th className="px-4 py-3 font-medium">
+                                            {t('Status')}
+                                        </th>
+                                        <th className="px-4 py-3" />
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {branches.map((branch) => (
+                                        <tr
+                                            key={branch.id}
+                                            className="border-t"
+                                        >
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium">
+                                                    {branch.name}
+                                                </div>
+                                                {branch.code && (
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {branch.code}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="hidden px-4 py-3 sm:table-cell">
+                                                {branch.city ?? '—'}
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                {branch.vehicles_count}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Badge
+                                                    variant={
+                                                        branch.is_active
+                                                            ? 'secondary'
+                                                            : 'outline'
+                                                    }
+                                                >
+                                                    {branch.is_active
+                                                        ? t('Active')
+                                                        : t('Inactive')}
+                                                </Badge>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    aria-label={t(
+                                                        'Edit branch',
+                                                    )}
+                                                    onClick={() => open(branch)}
+                                                >
+                                                    <Pencil />
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
         </>

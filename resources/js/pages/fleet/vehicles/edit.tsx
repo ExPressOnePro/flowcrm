@@ -5,6 +5,7 @@ import type { VehicleFormData } from '@/components/fleet/vehicle-form';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { useUnsavedChanges } from '@/hooks/use-unsaved-changes';
 import { useT } from '@/lib/i18n';
 import { dashboard } from '@/routes';
 import vehicles from '@/routes/vehicles';
@@ -35,8 +36,8 @@ export default function VehiclesEdit({
     ownershipTypes,
 }: Props) {
     const { t } = useT();
-    const { data, setData, put, processing, errors } = useForm<VehicleFormData>(
-        {
+    const { data, setData, put, processing, errors, isDirty } =
+        useForm<VehicleFormData>(`VehicleEdit:${vehicle.id}`, {
             plate_number: vehicle.plate_number,
             vin: vehicle.vin ?? '',
             make: vehicle.make,
@@ -50,8 +51,9 @@ export default function VehiclesEdit({
                 : '',
             commissioned_on: vehicle.commissioned_on ?? '',
             notes: vehicle.notes ?? '',
-        },
-    );
+        });
+
+    useUnsavedChanges(isDirty && !processing);
 
     return (
         <>
@@ -82,7 +84,7 @@ export default function VehiclesEdit({
                         ownershipTypes={ownershipTypes}
                     />
 
-                    <div className="flex items-center gap-3">
+                    <div className="grid grid-cols-2 gap-3 sm:flex sm:items-center">
                         <Button type="submit" disabled={processing}>
                             {processing && <Spinner />}
                             {t('Save changes')}
@@ -99,10 +101,14 @@ export default function VehiclesEdit({
     );
 }
 
-VehiclesEdit.layout = {
+VehiclesEdit.layout = (props: Props) => ({
     breadcrumbs: [
         { title: 'Dashboard', href: dashboard() },
         { title: 'Vehicles', href: vehicles.index() },
-        { title: 'Edit', href: vehicles.index() },
+        {
+            title: props.vehicle.plate_number,
+            href: vehicles.show(props.vehicle.id),
+        },
+        { title: 'Edit', href: vehicles.edit(props.vehicle.id) },
     ],
-};
+});

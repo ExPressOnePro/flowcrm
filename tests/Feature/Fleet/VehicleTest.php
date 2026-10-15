@@ -229,13 +229,21 @@ class VehicleTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('vehicle.archived', true)
-                ->has('couplings', 1));
+                ->has('activeCouplings', 0));
+
+        $this->actingAs($this->owner)
+            ->getJson(route('vehicles.timeline', ['vehicle' => $tractor, 'type' => 'coupling']))
+            ->assertOk()
+            ->assertJsonCount(2, 'items')
+            ->assertJsonPath('items.0.type', 'uncoupled')
+            ->assertJsonPath('items.1.type', 'coupled')
+            ->assertJsonPath('items.1.partner.id', $trailer->id);
     }
 
     public function test_show_page_contains_history_and_audit_log(): void
     {
         $vehicle = $this->vehicle();
-        $vehicle->update(['make' => 'Scania']);
+        $vehicle->update(['make' => 'Tatra']);
 
         $this->actingAs($this->owner)
             ->get(route('vehicles.show', $vehicle))
@@ -243,7 +251,15 @@ class VehicleTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('fleet/vehicles/show')
                 ->where('can.update', true)
-                ->has('activity'));
+                ->where('can.view_audit', true)
+                ->missing('activity'));
+
+        $this->actingAs($this->owner)
+            ->getJson(route('vehicles.activity', $vehicle))
+            ->assertOk()
+            ->assertJsonPath('items.0.event', 'updated')
+            ->assertJsonPath('items.0.changes.attributes.make', 'Tatra')
+            ->assertJsonPath('has_more', false);
 
         $activity = Activity::query()->where('subject_id', $vehicle->id)->latest('id')->firstOrFail();
         $this->assertSame('vehicle', $activity->subject_type);

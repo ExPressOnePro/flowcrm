@@ -36,6 +36,34 @@ type Props = {
 const selectClass =
     'border-input bg-background h-9 w-full rounded-md border px-3 text-sm shadow-xs';
 
+/** Plate numbers and VINs: capital letters, no autocorrect or spellcheck. */
+const identifierProps = {
+    autoCapitalize: 'characters',
+    autoCorrect: 'off',
+    spellCheck: false,
+    autoComplete: 'off',
+} as const;
+
+function RequiredLabel({
+    htmlFor,
+    children,
+}: {
+    htmlFor: string;
+    children: string;
+}) {
+    const { t } = useT();
+
+    return (
+        <Label htmlFor={htmlFor}>
+            {children}
+            <span className="text-destructive" aria-label={t('required')}>
+                {' '}
+                *
+            </span>
+        </Label>
+    );
+}
+
 export function VehicleForm({
     data,
     setData,
@@ -62,7 +90,9 @@ export function VehicleForm({
         <div className="grid gap-6">
             <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
-                    <Label htmlFor="vehicle_type_id">{t('Type')}</Label>
+                    <RequiredLabel htmlFor="vehicle_type_id">
+                        {t('Type')}
+                    </RequiredLabel>
                     <select
                         id="vehicle_type_id"
                         className={selectClass}
@@ -105,12 +135,15 @@ export function VehicleForm({
 
             <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
-                    <Label htmlFor="plate_number">{t('Plate number')}</Label>
+                    <RequiredLabel htmlFor="plate_number">
+                        {t('Plate number')}
+                    </RequiredLabel>
                     <Input
                         id="plate_number"
                         value={data.plate_number}
-                        className="uppercase"
-                        autoComplete="off"
+                        className="font-mono uppercase"
+                        enterKeyHint="next"
+                        {...identifierProps}
                         onChange={(event) =>
                             setData('plate_number', event.target.value)
                         }
@@ -125,7 +158,8 @@ export function VehicleForm({
                         value={data.vin}
                         maxLength={20}
                         className="font-mono uppercase"
-                        autoComplete="off"
+                        enterKeyHint="next"
+                        {...identifierProps}
                         onChange={(event) => setData('vin', event.target.value)}
                     />
                     <InputError message={errors.vin} />
@@ -134,9 +168,10 @@ export function VehicleForm({
 
             <div className="grid gap-4 md:grid-cols-3">
                 <div className="grid gap-2">
-                    <Label htmlFor="make">{t('Make')}</Label>
+                    <RequiredLabel htmlFor="make">{t('Make')}</RequiredLabel>
                     <Input
                         id="make"
+                        autoCapitalize="words"
                         value={data.make}
                         onChange={(event) =>
                             setData('make', event.target.value)
@@ -160,11 +195,17 @@ export function VehicleForm({
                     <Label htmlFor="year">{t('Year')}</Label>
                     <Input
                         id="year"
-                        type="number"
+                        type="text"
                         inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={4}
+                        autoComplete="off"
                         value={data.year}
                         onChange={(event) =>
-                            setData('year', event.target.value)
+                            setData(
+                                'year',
+                                event.target.value.replace(/\D/g, ''),
+                            )
                         }
                     />
                     <InputError message={errors.year} />
@@ -235,14 +276,15 @@ export function VehicleForm({
                             </Label>
                             <Input
                                 id="initial_odometer_km"
-                                type="number"
+                                type="text"
                                 inputMode="numeric"
-                                min={0}
+                                pattern="[0-9]*"
+                                autoComplete="off"
                                 value={data.initial_odometer_km}
                                 onChange={(event) =>
                                     setData(
                                         'initial_odometer_km',
-                                        event.target.value,
+                                        event.target.value.replace(/\D/g, ''),
                                     )
                                 }
                             />

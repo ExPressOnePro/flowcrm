@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class RecordOdometerReading
 {
+    private const DUPLICATE_WINDOW_SECONDS = 60;
+
     /**
      * Readings must be monotonic in time: a value can't be lower than any earlier
      * reading or higher than any later one. A replaced odometer is a future
@@ -34,6 +36,22 @@ class RecordOdometerReading
                 throw ValidationException::withMessages([
                     'value_km' => __('This vehicle type does not track odometer readings.'),
                 ]);
+            }
+
+            // A repeated submit (double tap, retry on a flaky mobile network) returns the reading already saved.
+            if ($actor !== null && $sourceable === null) {
+                $duplicate = OdometerReading::query()
+                    ->where('vehicle_id', $vehicle->id)
+                    ->where('value_km', $valueKm)
+                    ->where('source', $source->value)
+                    ->where('recorded_by', $actor->id)
+                    ->where('created_at', '>=', now()->subSeconds(self::DUPLICATE_WINDOW_SECONDS))
+                    ->latest('id')
+                    ->first();
+
+                if ($duplicate !== null) {
+                    return $duplicate;
+                }
             }
 
             if ($valueKm < 0) {

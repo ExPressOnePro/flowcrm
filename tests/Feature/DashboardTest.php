@@ -6,6 +6,7 @@ use App\Enums\DealStatus;
 use App\Enums\TaskStatus;
 use App\Models\Customer;
 use App\Models\Deal;
+use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Pipeline;
 use App\Models\Task;
@@ -31,7 +32,7 @@ class DashboardTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_dashboard_includes_analytics_props()
+    public function test_analytics_includes_commercial_props()
     {
         $user = createUserWithOrganization();
         $organization = $user->organizations()->firstOrFail();
@@ -61,7 +62,7 @@ class DashboardTest extends TestCase
         Payment::factory()->create([
             'organization_id' => $organization->id,
             'customer_id' => $customer->id,
-            'invoice_id' => \App\Models\Invoice::factory()->create([
+            'invoice_id' => Invoice::factory()->create([
                 'organization_id' => $organization->id,
                 'customer_id' => $customer->id,
                 'created_by' => $user->id,
@@ -81,10 +82,10 @@ class DashboardTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('dashboard'))
+            ->get(route('analytics'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('dashboard')
+                ->component('analytics/index')
                 ->where('stats.customers', 1)
                 ->where('stats.activeDeals', 1)
                 ->where('stats.pipelineValue', 8500)

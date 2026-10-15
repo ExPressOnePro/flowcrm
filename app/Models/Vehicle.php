@@ -45,6 +45,8 @@ class Vehicle extends Model
     /** @use HasFactory<VehicleFactory> */
     use BelongsToOrganization, HasFactory, LogsActivity, SoftDeletes;
 
+    public const STALE_ODOMETER_DAYS = 30;
+
     /**
      * `status` and `current_odometer_km` are changed only through
      * ChangeVehicleStatus / RecordOdometerReading so their history stays complete.
@@ -129,6 +131,33 @@ class Vehicle extends Model
                 ->orWhere('make', 'like', "%{$term}%")
                 ->orWhere('model', 'like', "%{$term}%");
         });
+    }
+
+    /**
+     * Operational vehicles with an odometer and no reading within the window.
+     *
+     * @param  Builder<Vehicle>  $query
+     */
+    public function scopeOdometerStale(Builder $query): void
+    {
+        $query->where('status', '!=', VehicleStatus::Decommissioned->value)
+            ->whereHas('type', fn (Builder $query) => $query->where('has_odometer', true))
+            ->whereDoesntHave(
+                'odometerReadings',
+                fn (Builder $query) => $query->where('recorded_at', '>=', now()->subDays(self::STALE_ODOMETER_DAYS)),
+            );
+    }
+
+    /**
+     * @param  Builder<Vehicle>  $query
+     */
+    public function scopeCoupled(Builder $query, bool $coupled = true): void
+    {
+        $method = $coupled ? 'where' : 'whereNot';
+
+        $query->{$method}(fn (Builder $query) => $query
+            ->whereHas('activeTowingCouplings')
+            ->orWhereHas('activeTowedCoupling'));
     }
 
     public function type(): BelongsTo

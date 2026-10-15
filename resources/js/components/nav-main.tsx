@@ -1,13 +1,15 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import {
     SidebarGroup,
     SidebarGroupLabel,
     SidebarMenu,
+    SidebarMenuBadge,
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useT } from '@/lib/i18n';
+import { useNavPermissions } from '@/lib/navigation';
 import type { NavGroup, NavItem } from '@/types';
 
 export function NavMain({
@@ -19,15 +21,10 @@ export function NavMain({
 }) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
     const { t } = useT();
-    const permissions = usePage().props.authPermissions;
-
-    const allowed = (item: NavItem) =>
-        !item.permission || permissions.includes(item.permission);
+    const { allowed, filterGroups } = useNavPermissions();
 
     const visibleItems = items.filter(allowed);
-    const visibleGroups = groups
-        .map((group) => ({ ...group, items: group.items.filter(allowed) }))
-        .filter((group) => group.items.length > 0);
+    const visibleGroups = filterGroups(groups);
 
     return (
         <>
@@ -74,6 +71,8 @@ function NavLink({
     title: string;
     isActive: boolean;
 }) {
+    const { t } = useT();
+
     return (
         <SidebarMenuItem>
             <SidebarMenuButton
@@ -86,6 +85,11 @@ function NavLink({
                     <span>{title}</span>
                 </Link>
             </SidebarMenuButton>
+            {item.stage && (
+                <SidebarMenuBadge className="text-[10px] font-normal text-muted-foreground">
+                    {t('soon')}
+                </SidebarMenuBadge>
+            )}
         </SidebarMenuItem>
     );
 }

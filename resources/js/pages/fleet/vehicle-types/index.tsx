@@ -205,79 +205,137 @@ export default function VehicleTypesIndex({
                 {types.length === 0 ? (
                     <EmptyState icon={Shapes} title={t('Vehicle types')} />
                 ) : (
-                    <div className="overflow-x-auto rounded-xl border">
-                        <table className="w-full text-sm">
-                            <thead className="bg-muted/40 text-left text-muted-foreground">
-                                <tr>
-                                    <th className="px-4 py-3 font-medium">
-                                        {t('Name')}
-                                    </th>
-                                    <th className="hidden px-4 py-3 font-medium sm:table-cell">
-                                        {t('Category')}
-                                    </th>
-                                    <th className="px-4 py-3 font-medium">
-                                        {t('Can tow')}
-                                    </th>
-                                    <th className="px-4 py-3 font-medium">
-                                        {t('Towable')}
-                                    </th>
-                                    <th className="px-4 py-3 font-medium">
-                                        {t('Odometer')}
-                                    </th>
-                                    <th className="px-4 py-3 text-right font-medium">
-                                        {t('Vehicles count')}
-                                    </th>
-                                    <th className="px-4 py-3" />
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {types.map((type) => (
-                                    <tr key={type.id} className="border-t">
-                                        <td className="px-4 py-3">
-                                            <div className="font-medium">
+                    <>
+                        <ul className="grid grid-cols-1 gap-3 md:hidden">
+                            {types.map((type) => (
+                                <li
+                                    key={type.id}
+                                    className="flex items-start justify-between gap-3 rounded-xl border p-4"
+                                >
+                                    <div className="min-w-0 space-y-1.5">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className="font-medium">
                                                 {type.name}
-                                            </div>
+                                            </span>
                                             {!type.is_active && (
                                                 <Badge variant="outline">
                                                     {t('Inactive')}
                                                 </Badge>
                                             )}
-                                        </td>
-                                        <td className="hidden px-4 py-3 sm:table-cell">
+                                        </div>
+                                        <div className="text-sm text-muted-foreground">
                                             {label(
                                                 'vehicle_category',
                                                 type.category,
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Flag value={type.can_tow} />
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Flag value={type.is_towable} />
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <Flag value={type.has_odometer} />
-                                        </td>
-                                        <td className="px-4 py-3 text-right tabular-nums">
+                                            )}{' '}
+                                            · {t('Vehicles count')}:{' '}
                                             {type.vehicles_count}
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                aria-label={t(
-                                                    'Edit vehicle type',
-                                                )}
-                                                onClick={() => open(type)}
-                                            >
-                                                <Pencil />
-                                            </Button>
-                                        </td>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {type.can_tow && (
+                                                <Badge variant="secondary">
+                                                    {t('Can tow')}
+                                                </Badge>
+                                            )}
+                                            {type.is_towable && (
+                                                <Badge variant="secondary">
+                                                    {t('Towable')}
+                                                </Badge>
+                                            )}
+                                            {type.has_odometer && (
+                                                <Badge variant="secondary">
+                                                    {t('Odometer')}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        aria-label={t('Edit vehicle type')}
+                                        onClick={() => open(type)}
+                                    >
+                                        <Pencil />
+                                    </Button>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="hidden overflow-x-auto rounded-xl border md:block">
+                            <table className="w-full text-sm">
+                                <thead className="bg-muted/40 text-left text-muted-foreground">
+                                    <tr>
+                                        <th className="px-4 py-3 font-medium">
+                                            {t('Name')}
+                                        </th>
+                                        <th className="hidden px-4 py-3 font-medium sm:table-cell">
+                                            {t('Category')}
+                                        </th>
+                                        <th className="px-4 py-3 font-medium">
+                                            {t('Can tow')}
+                                        </th>
+                                        <th className="px-4 py-3 font-medium">
+                                            {t('Towable')}
+                                        </th>
+                                        <th className="px-4 py-3 font-medium">
+                                            {t('Odometer')}
+                                        </th>
+                                        <th className="px-4 py-3 text-right font-medium">
+                                            {t('Vehicles count')}
+                                        </th>
+                                        <th className="px-4 py-3" />
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {types.map((type) => (
+                                        <tr key={type.id} className="border-t">
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium">
+                                                    {type.name}
+                                                </div>
+                                                {!type.is_active && (
+                                                    <Badge variant="outline">
+                                                        {t('Inactive')}
+                                                    </Badge>
+                                                )}
+                                            </td>
+                                            <td className="hidden px-4 py-3 sm:table-cell">
+                                                {label(
+                                                    'vehicle_category',
+                                                    type.category,
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Flag value={type.can_tow} />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Flag value={type.is_towable} />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Flag
+                                                    value={type.has_odometer}
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 text-right tabular-nums">
+                                                {type.vehicles_count}
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    aria-label={t(
+                                                        'Edit vehicle type',
+                                                    )}
+                                                    onClick={() => open(type)}
+                                                >
+                                                    <Pencil />
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
         </>

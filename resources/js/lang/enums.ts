@@ -30,6 +30,27 @@ const ru: EnumLabels = {
         maintenance: 'ТО',
         telematics: 'Телематика',
     },
+    task_status: {
+        open: 'Открыта',
+        in_progress: 'В работе',
+        completed: 'Выполнена',
+        cancelled: 'Отменена',
+    },
+    task_priority: {
+        low: 'Низкий',
+        medium: 'Средний',
+        high: 'Высокий',
+        urgent: 'Срочный',
+    },
+    customer_status: {
+        active: 'Активный',
+        inactive: 'Неактивный',
+        prospect: 'Потенциальный',
+    },
+    customer_type: {
+        individual: 'Физлицо',
+        company: 'Компания',
+    },
 };
 
 const en: EnumLabels = {
@@ -61,6 +82,27 @@ const en: EnumLabels = {
         waybill_return: 'Waybill (return)',
         maintenance: 'Maintenance',
         telematics: 'Telematics',
+    },
+    task_status: {
+        open: 'Open',
+        in_progress: 'In progress',
+        completed: 'Completed',
+        cancelled: 'Cancelled',
+    },
+    task_priority: {
+        low: 'Low',
+        medium: 'Medium',
+        high: 'High',
+        urgent: 'Urgent',
+    },
+    customer_status: {
+        active: 'Active',
+        inactive: 'Inactive',
+        prospect: 'Prospect',
+    },
+    customer_type: {
+        individual: 'Individual',
+        company: 'Company',
     },
 };
 

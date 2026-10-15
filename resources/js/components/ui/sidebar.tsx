@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator"
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
@@ -21,6 +20,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { documentLocale, translate } from "@/lib/i18n"
 import { cn } from "@/lib/utils"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
@@ -179,10 +179,6 @@ function Sidebar({
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-        <SheetHeader className="sr-only">
-          <SheetTitle>Sidebar</SheetTitle>
-          <SheetDescription>Displays the mobile sidebar.</SheetDescription>
-        </SheetHeader>
         <SheetContent
           data-sidebar="sidebar"
           data-slot="sidebar"
@@ -194,7 +190,11 @@ function Sidebar({
             } as React.CSSProperties
           }
           side={side}
+          aria-describedby={undefined}
         >
+          <SheetHeader className="sr-only">
+            <SheetTitle>{translate(documentLocale(), 'Navigation menu')}</SheetTitle>
+          </SheetHeader>
           <div className="flex h-full w-full flex-col">{children}</div>
         </SheetContent>
       </Sheet>
@@ -267,7 +267,7 @@ function SidebarTrigger({
       {...props}
     >
       {isMobile || state === "collapsed" ? <PanelLeftOpenIcon /> : <PanelLeftCloseIcon />}
-      <span className="sr-only">Toggle sidebar</span>
+      <span className="sr-only">{translate(documentLocale(), 'Toggle sidebar')}</span>
     </Button>
   )
 }

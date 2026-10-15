@@ -2,23 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\DashboardService;
+use App\Models\Vehicle;
+use App\Services\FleetDashboardService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, DashboardService $dashboard): Response
+    public function __invoke(Request $request, FleetDashboardService $dashboard): Response
     {
-        abort_unless($request->user()?->can('dashboard.view'), 403);
+        $user = $request->user();
+
+        abort_unless($user?->can('dashboard.view'), 403);
+
+        $canViewFleet = Gate::allows('viewAny', Vehicle::class);
 
         return Inertia::render('dashboard', [
-            'stats' => $dashboard->statistics(),
-            'pipeline' => $dashboard->pipeline(),
-            'revenueChart' => $dashboard->revenue(),
-            'recentDeals' => $dashboard->recentDeals(),
-            'tasks' => $dashboard->todayTasks(),
+            'fleet' => $canViewFleet ? $dashboard->fleet($user) : null,
+            'attention' => $canViewFleet ? $dashboard->attention($user) : [],
+            'tasks' => $user->can('tasks.view') ? $dashboard->myTasks($user) : [],
+            'staleOdometerDays' => Vehicle::STALE_ODOMETER_DAYS,
+            'can' => [
+                'create_vehicle' => Gate::allows('create', Vehicle::class),
+                'view_analytics' => $user->can('analytics.view'),
+                'view_tasks' => $user->can('tasks.view'),
+            ],
         ]);
     }
 }

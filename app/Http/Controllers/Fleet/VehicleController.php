@@ -17,23 +17,48 @@ use App\Models\Vehicle;
 use App\Models\VehicleCoupling;
 use App\Models\VehicleStatusChange;
 use App\Models\VehicleType;
+use App\Services\VehicleTimeline;
 use App\Support\BranchAccess;
 use App\Support\CurrentOrganization;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Activitylog\Models\Activity;
 
 class VehicleController extends Controller
 {
+    private const SORTS = ['plate', '-plate', 'odometer', '-odometer', 'commissioned', '-commissioned'];
+
+    /**
+     * @return array{0: string, 1: 'asc'|'desc'}
+     */
+    private function sortColumn(string $sort): array
+    {
+        $column = match (ltrim($sort, '-')) {
+            'odometer' => 'current_odometer_km',
+            'commissioned' => 'commissioned_on',
+            default => 'plate_number',
+        };
+
+        return [$column, str_starts_with($sort, '-') ? 'desc' : 'asc'];
+    }
+
     public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Vehicle::class);
 
         $user = $request->user();
         $archived = $request->boolean('archived');
+        $coupled = in_array($request->query('coupled'), ['0', '1'], true) ? $request->query('coupled') : '';
+        $attention = $request->query('attention') === 'stale_odometer' ? 'stale_odometer' : '';
+        $sort = in_array($request->query('sort'), self::SORTS, true) ? $request->query('sort') : 'plate';
+        [$sortColumn, $sortDirection] = $this->sortColumn($sort);
 
         $vehicles = Vehicle::query()
             ->visibleTo($user)
@@ -41,9 +66,12 @@ class VehicleController extends Controller
             ->with([
                 'type:id,name,category,can_tow,is_towable',
                 'branch:id,name',
+                'responsible:id,first_name,last_name',
                 'activeTowingCouplings.trailer:id,plate_number',
                 'activeTowedCoupling.tractor:id,plate_number',
             ])
+            ->when($coupled !== '', fn ($query) => $query->coupled($coupled === '1'))
+            ->when($attention === 'stale_odometer', fn ($query) => $query->odometerStale())
             ->when($request->filled('search'), fn ($query) => $query->search($request->string('search')->toString()))
             ->when($request->filled('status'), fn ($query) => $query->where('status', $request->string('status')->toString()))
             ->when($request->filled('type'), fn ($query) => $query->where('vehicle_type_id', $request->integer('type')))
@@ -52,11 +80,14 @@ class VehicleController extends Controller
                 $request->filled('category'),
                 fn ($query) => $query->whereHas('type', fn ($query) => $query->where('category', $request->string('category')->toString())),
             )
-            ->orderBy('plate_number')
+            ->orderByRaw("{$sortColumn} IS NULL")
+            ->orderBy($sortColumn, $sortDirection)
+            ->orderBy('id')
             ->paginate(20)
             ->withQueryString()
             ->through(fn (Vehicle $vehicle) => [
                 ...$this->summary($vehicle),
+                'responsible' => $vehicle->responsible?->name,
                 'coupled_with' => $vehicle->type->can_tow
                     ? $vehicle->activeTowingCouplings->map(fn (VehicleCoupling $coupling) => [
                         'id' => $coupling->trailer->id,
@@ -76,7 +107,10 @@ class VehicleController extends Controller
                 'type' => $request->string('type')->toString(),
                 'branch' => $request->string('branch')->toString(),
                 'category' => $request->string('category')->toString(),
+                'coupled' => $coupled,
+                'attention' => $attention,
                 'archived' => $archived,
+                'sort' => $sort,
             ],
             ...$this->options($user),
             'can' => [
@@ -115,33 +149,29 @@ class VehicleController extends Controller
             'createdBy:id,first_name,last_name',
         ]);
 
-        $couplings = VehicleCoupling::query()
+        $activeCouplings = VehicleCoupling::query()
+            ->whereNull('uncoupled_at')
             ->where(fn ($query) => $query->where('tractor_id', $vehicle->id)->orWhere('trailer_id', $vehicle->id))
             ->with([
                 'tractor:id,plate_number,make,model,deleted_at',
                 'trailer:id,plate_number,make,model,deleted_at',
                 'coupledBy:id,first_name,last_name',
-                'uncoupledBy:id,first_name,last_name',
             ])
-            ->orderByRaw('uncoupled_at IS NOT NULL')
-            ->orderByDesc('coupled_at')
-            ->limit(100)
+            ->orderBy('position')
             ->get();
 
-        $readings = OdometerReading::query()
+        $lastReading = OdometerReading::query()
             ->where('vehicle_id', $vehicle->id)
             ->with('recordedBy:id,first_name,last_name')
             ->orderByDesc('recorded_at')
             ->orderByDesc('id')
-            ->limit(100)
-            ->get();
+            ->first();
 
-        $statusChanges = VehicleStatusChange::query()
+        $statusSince = VehicleStatusChange::query()
             ->where('vehicle_id', $vehicle->id)
-            ->with('changedBy:id,first_name,last_name')
             ->orderByDesc('changed_at')
             ->orderByDesc('id')
-            ->get();
+            ->value('changed_at');
 
         $canCouple = Gate::allows('couple', $vehicle) && ! $vehicle->trashed();
 
@@ -160,36 +190,28 @@ class VehicleController extends Controller
                 'notes' => $vehicle->notes,
                 'created_at' => $vehicle->created_at?->toIso8601String(),
                 'deleted_at' => $vehicle->deleted_at?->toIso8601String(),
+                'status_since' => $statusSince ? Carbon::parse($statusSince, 'UTC')->toIso8601String() : null,
+                'odometer_stale' => $vehicle->type->has_odometer
+                    && $vehicle->status->isOperational()
+                    && (! $lastReading || $lastReading->recorded_at->lt(now()->subDays(Vehicle::STALE_ODOMETER_DAYS))),
             ],
-            'couplings' => $couplings->map(fn (VehicleCoupling $coupling) => [
+            'activeCouplings' => $activeCouplings->map(fn (VehicleCoupling $coupling) => [
                 'id' => $coupling->id,
                 'role' => $coupling->tractor_id === $vehicle->id ? 'tractor' : 'trailer',
                 'partner' => $this->partner($coupling->tractor_id === $vehicle->id ? $coupling->trailer : $coupling->tractor),
                 'position' => $coupling->position,
                 'coupled_at' => $coupling->coupled_at->toIso8601String(),
-                'uncoupled_at' => $coupling->uncoupled_at?->toIso8601String(),
                 'coupled_by' => $coupling->coupledBy?->name,
-                'uncoupled_by' => $coupling->uncoupledBy?->name,
                 'notes' => $coupling->notes,
             ]),
-            'odometerReadings' => $readings->map(fn (OdometerReading $reading) => [
-                'id' => $reading->id,
-                'value_km' => $reading->value_km,
-                'recorded_at' => $reading->recorded_at->toIso8601String(),
-                'source' => $reading->source->value,
-                'is_device' => $reading->source->isDeviceReported(),
-                'note' => $reading->note,
-                'recorded_by' => $reading->recordedBy?->name,
-            ]),
-            'statusChanges' => $statusChanges->map(fn (VehicleStatusChange $change) => [
-                'id' => $change->id,
-                'from_status' => $change->from_status?->value,
-                'to_status' => $change->to_status->value,
-                'changed_at' => $change->changed_at->toIso8601String(),
-                'reason' => $change->reason,
-                'changed_by' => $change->changedBy?->name,
-            ]),
-            'activity' => Gate::allows('viewAudit', $vehicle) ? $this->activity($vehicle, $couplings->pluck('id')->all()) : null,
+            'lastReading' => $lastReading ? [
+                'value_km' => $lastReading->value_km,
+                'recorded_at' => $lastReading->recorded_at->toIso8601String(),
+                'source' => $lastReading->source->value,
+                'is_device' => $lastReading->source->isDeviceReported(),
+                'recorded_by' => $lastReading->recordedBy?->name,
+            ] : null,
+            'staleOdometerDays' => Vehicle::STALE_ODOMETER_DAYS,
             'couplingCandidates' => $canCouple && $vehicle->type->can_tow ? $this->couplingCandidates($request->user()) : [],
             'statuses' => collect(VehicleStatus::cases())->map->value,
             'can' => [
@@ -198,7 +220,64 @@ class VehicleController extends Controller
                 'couple' => $canCouple,
                 'record_odometer' => Gate::allows('recordOdometer', $vehicle) && ! $vehicle->trashed() && $vehicle->type->has_odometer,
                 'archive' => Gate::allows('delete', $vehicle),
+                'view_audit' => Gate::allows('viewAudit', $vehicle),
             ],
+        ]);
+    }
+
+    public function timeline(Request $request, Vehicle $vehicle, VehicleTimeline $timeline): JsonResponse
+    {
+        Gate::authorize('view', $vehicle);
+
+        $validated = $request->validate([
+            'type' => ['nullable', Rule::in(VehicleTimeline::TYPES)],
+            'period' => ['nullable', Rule::in(array_keys(VehicleTimeline::PERIODS))],
+            'before' => ['nullable', 'date'],
+        ]);
+
+        return response()->json($timeline->page(
+            $vehicle,
+            $validated['type'] ?? 'all',
+            $validated['period'] ?? 'all',
+            isset($validated['before']) ? CarbonImmutable::parse($validated['before']) : null,
+        ));
+    }
+
+    public function activity(Request $request, Vehicle $vehicle): JsonResponse
+    {
+        Gate::authorize('viewAudit', $vehicle);
+
+        $beforeId = $request->integer('before_id') ?: null;
+        $limit = 30;
+
+        $couplingIds = VehicleCoupling::query()
+            ->where(fn ($query) => $query->where('tractor_id', $vehicle->id)->orWhere('trailer_id', $vehicle->id))
+            ->pluck('id')
+            ->all();
+
+        $entries = Activity::query()
+            ->with('causer')
+            ->where(fn ($query) => $query
+                ->where(fn ($query) => $query->where('subject_type', $vehicle->getMorphClass())->where('subject_id', $vehicle->id))
+                ->orWhere(fn ($query) => $query->where('subject_type', (new VehicleCoupling)->getMorphClass())->whereIn('subject_id', $couplingIds)))
+            ->when($beforeId, fn ($query) => $query->where('id', '<', $beforeId))
+            ->orderByDesc('id')
+            ->limit($limit + 1)
+            ->get();
+
+        $page = $entries->take($limit);
+
+        return response()->json([
+            'items' => $page->map(fn (Activity $activity) => [
+                'id' => $activity->id,
+                'event' => $activity->event,
+                'subject' => $activity->subject_type,
+                'changes' => $activity->attribute_changes,
+                'causer' => $activity->causer instanceof User ? $activity->causer->name : null,
+                'created_at' => $activity->created_at?->toIso8601String(),
+            ])->values(),
+            'has_more' => $entries->count() > $limit,
+            'next_before_id' => $entries->count() > $limit ? $page->last()?->id : null,
         ]);
     }
 
@@ -313,31 +392,6 @@ class VehicleController extends Controller
             'name' => trim($vehicle->make.' '.$vehicle->model),
             'archived' => $vehicle->trashed(),
         ] : null;
-    }
-
-    /**
-     * @param  list<int>  $couplingIds
-     * @return list<array<string, mixed>>
-     */
-    private function activity(Vehicle $vehicle, array $couplingIds): array
-    {
-        return Activity::query()
-            ->with('causer')
-            ->where(fn ($query) => $query
-                ->where(fn ($query) => $query->where('subject_type', $vehicle->getMorphClass())->where('subject_id', $vehicle->id))
-                ->orWhere(fn ($query) => $query->where('subject_type', (new VehicleCoupling)->getMorphClass())->whereIn('subject_id', $couplingIds)))
-            ->latest('id')
-            ->limit(100)
-            ->get()
-            ->map(fn (Activity $activity) => [
-                'id' => $activity->id,
-                'event' => $activity->event,
-                'subject' => $activity->subject_type,
-                'changes' => $activity->attribute_changes,
-                'causer' => $activity->causer instanceof User ? $activity->causer->name : null,
-                'created_at' => $activity->created_at?->toIso8601String(),
-            ])
-            ->all();
     }
 
     /**

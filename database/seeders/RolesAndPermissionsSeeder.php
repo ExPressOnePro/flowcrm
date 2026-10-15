@@ -13,6 +13,7 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public const PERMISSIONS = [
         'dashboard.view',
+        'analytics.view',
 
         'customers.view',
         'customers.create',

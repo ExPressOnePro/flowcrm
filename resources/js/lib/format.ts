@@ -21,12 +21,19 @@ export function useFormat() {
             dateStyle: 'short',
             timeStyle: 'short',
         });
+        const day = new Intl.DateTimeFormat(intlLocale(locale), {
+            timeZone: timezone,
+            dateStyle: 'short',
+        });
         const number = new Intl.NumberFormat(intlLocale(locale));
 
         return {
             timezone,
             dateTime: (value: string | null | undefined) =>
                 value ? dateTime.format(new Date(value)) : '—',
+            /** Calendar day of a timestamp in the organization's timezone. */
+            dayOf: (value: string | null | undefined) =>
+                value ? day.format(new Date(value)) : '—',
             date: (value: string | null | undefined) => {
                 if (!value) {
                     return '—';
