@@ -78,24 +78,12 @@ export type CouplingCandidate = {
 export type VehicleCan = {
     update: boolean;
     change_status: boolean;
-    couple: boolean;
     record_odometer: boolean;
     archive: boolean;
-    view_audit: boolean;
     view_documents: boolean;
     create_document: boolean;
     update_document: boolean;
     archive_document: boolean;
-    view_waybills: boolean;
-    create_waybill: boolean;
-};
-
-export type OpenWaybill = {
-    id: number;
-    number: string | null;
-    driver: string;
-    departure_at: string | null;
-    overdue: boolean;
 };
 
 export type VehicleOptions = {

@@ -229,7 +229,7 @@ class VehicleTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->where('vehicle.archived', true)
-                ->has('activeCouplings', 0));
+                ->missing('activeCouplings'));
 
         $this->actingAs($this->owner)
             ->getJson(route('vehicles.timeline', ['vehicle' => $tractor, 'type' => 'coupling']))
@@ -251,8 +251,10 @@ class VehicleTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('fleet/vehicles/show')
                 ->where('can.update', true)
-                ->where('can.view_audit', true)
-                ->missing('activity'));
+                ->where('can.view_documents', true)
+                ->missing('activity')
+                ->missing('openWaybill')
+                ->missing('activeCouplings'));
 
         $this->actingAs($this->owner)
             ->getJson(route('vehicles.activity', $vehicle))

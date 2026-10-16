@@ -18,7 +18,6 @@ use App\Models\Vehicle;
 use App\Models\VehicleCoupling;
 use App\Models\VehicleStatusChange;
 use App\Models\VehicleType;
-use App\Models\Waybill;
 use App\Services\SubjectDocuments;
 use App\Services\VehicleTimeline;
 use App\Support\BranchAccess;
@@ -152,17 +151,6 @@ class VehicleController extends Controller
             'createdBy:id,first_name,last_name',
         ]);
 
-        $activeCouplings = VehicleCoupling::query()
-            ->whereNull('uncoupled_at')
-            ->where(fn ($query) => $query->where('tractor_id', $vehicle->id)->orWhere('trailer_id', $vehicle->id))
-            ->with([
-                'tractor:id,plate_number,make,model,deleted_at',
-                'trailer:id,plate_number,make,model,deleted_at',
-                'coupledBy:id,first_name,last_name',
-            ])
-            ->orderBy('position')
-            ->get();
-
         $lastReading = OdometerReading::query()
             ->where('vehicle_id', $vehicle->id)
             ->with('recordedBy:id,first_name,last_name')
@@ -176,9 +164,7 @@ class VehicleController extends Controller
             ->orderByDesc('id')
             ->value('changed_at');
 
-        $canCouple = Gate::allows('couple', $vehicle) && ! $vehicle->trashed();
         $canViewDocuments = Gate::allows('viewAny', Document::class);
-        $canViewWaybills = Gate::allows('viewAny', Waybill::class);
 
         return Inertia::render('fleet/vehicles/show', [
             'vehicle' => [
@@ -200,15 +186,6 @@ class VehicleController extends Controller
                     && $vehicle->status->isOperational()
                     && (! $lastReading || $lastReading->recorded_at->lt(now()->subDays(Vehicle::STALE_ODOMETER_DAYS))),
             ],
-            'activeCouplings' => $activeCouplings->map(fn (VehicleCoupling $coupling) => [
-                'id' => $coupling->id,
-                'role' => $coupling->tractor_id === $vehicle->id ? 'tractor' : 'trailer',
-                'partner' => $this->partner($coupling->tractor_id === $vehicle->id ? $coupling->trailer : $coupling->tractor),
-                'position' => $coupling->position,
-                'coupled_at' => $coupling->coupled_at->toIso8601String(),
-                'coupled_by' => $coupling->coupledBy?->name,
-                'notes' => $coupling->notes,
-            ]),
             'lastReading' => $lastReading ? [
                 'value_km' => $lastReading->value_km,
                 'recorded_at' => $lastReading->recorded_at->toIso8601String(),
@@ -218,47 +195,18 @@ class VehicleController extends Controller
             ] : null,
             'staleOdometerDays' => Vehicle::STALE_ODOMETER_DAYS,
             'documentSummary' => $canViewDocuments ? $vehicleDocuments->summary($vehicle) : null,
-            'openWaybill' => $canViewWaybills ? $this->openWaybill($vehicle) : null,
-            'couplingCandidates' => $canCouple && $vehicle->type->can_tow ? $this->couplingCandidates($request->user()) : [],
             'statuses' => collect(VehicleStatus::cases())->map->value,
             'can' => [
                 'update' => Gate::allows('update', $vehicle) && ! $vehicle->trashed(),
                 'change_status' => Gate::allows('changeStatus', $vehicle) && ! $vehicle->trashed(),
-                'couple' => $canCouple,
                 'record_odometer' => Gate::allows('recordOdometer', $vehicle) && ! $vehicle->trashed() && $vehicle->type->has_odometer,
                 'archive' => Gate::allows('delete', $vehicle),
-                'view_audit' => Gate::allows('viewAudit', $vehicle),
                 'view_documents' => $canViewDocuments,
                 'create_document' => Gate::allows('create', [Document::class, $vehicle]),
                 'update_document' => $request->user()->can('documents.update'),
                 'archive_document' => $request->user()->can('documents.archive'),
-                'view_waybills' => $canViewWaybills,
-                'create_waybill' => Gate::allows('create', Waybill::class)
-                    && ! $vehicle->trashed()
-                    && $vehicle->status !== VehicleStatus::Decommissioned
-                    && ! $vehicle->type->is_towable,
             ],
         ]);
-    }
-
-    /**
-     * @return array{id: int, number: string|null, driver: string, departure_at: string|null, overdue: bool}|null
-     */
-    private function openWaybill(Vehicle $vehicle): ?array
-    {
-        $waybill = Waybill::query()
-            ->open()
-            ->where(fn ($query) => $query->where('vehicle_id', $vehicle->id)->orWhere('trailer_id', $vehicle->id))
-            ->with('driver:id,last_name,first_name,middle_name')
-            ->first();
-
-        return $waybill ? [
-            'id' => $waybill->id,
-            'number' => $waybill->number,
-            'driver' => $waybill->driver->full_name,
-            'departure_at' => $waybill->departure_at?->toIso8601String(),
-            'overdue' => $waybill->isReturnOverdue(),
-        ] : null;
     }
 
     public function timeline(Request $request, Vehicle $vehicle, VehicleTimeline $timeline): JsonResponse
@@ -415,41 +363,6 @@ class VehicleController extends Controller
             'branch' => $vehicle->branch ? ['id' => $vehicle->branch->id, 'name' => $vehicle->branch->name] : null,
             'archived' => $vehicle->trashed(),
         ];
-    }
-
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function partner(?Vehicle $vehicle): ?array
-    {
-        return $vehicle ? [
-            'id' => $vehicle->id,
-            'plate_number' => $vehicle->plate_number,
-            'name' => trim($vehicle->make.' '.$vehicle->model),
-            'archived' => $vehicle->trashed(),
-        ] : null;
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function couplingCandidates(User $user): array
-    {
-        return Vehicle::query()
-            ->visibleTo($user)
-            ->whereHas('type', fn ($query) => $query->where('is_towable', true))
-            ->where('status', '!=', VehicleStatus::Decommissioned->value)
-            ->whereDoesntHave('activeTowedCoupling')
-            ->with('type:id,name')
-            ->orderBy('plate_number')
-            ->get()
-            ->map(fn (Vehicle $trailer) => [
-                'id' => $trailer->id,
-                'plate_number' => $trailer->plate_number,
-                'name' => trim($trailer->make.' '.$trailer->model),
-                'type' => $trailer->type->name,
-            ])
-            ->all();
     }
 
     /**

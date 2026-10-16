@@ -355,7 +355,7 @@ class WaybillTest extends TestCase
                 ->where('counts.overdue', 1));
     }
 
-    public function test_vehicle_card_lists_trips_as_vehicle_and_as_trailer(): void
+    public function test_vehicle_and_trailer_waybill_lists_include_the_shared_trip(): void
     {
         $tractor = $this->vehicle();
         $trailer = $this->vehicle(VehicleCategory::Semitrailer);
@@ -367,15 +367,10 @@ class WaybillTest extends TestCase
             ->assertJsonPath('items.0.id', $waybill->id)
             ->assertJsonPath('items.0.trailer.id', $trailer->id);
 
-        $this->actingAs($this->owner)->get(route('vehicles.show', $tractor))
-            ->assertInertia(fn ($page) => $page
-                ->where('openWaybill.id', $waybill->id)
-                ->where('can.create_waybill', true));
-
-        $this->actingAs($this->owner)->get(route('vehicles.show', $trailer))
-            ->assertInertia(fn ($page) => $page
-                ->where('openWaybill.id', $waybill->id)
-                ->where('can.create_waybill', false));
+        $this->actingAs($this->owner)->getJson(route('vehicles.waybills.index', $tractor))
+            ->assertOk()
+            ->assertJsonPath('items.0.id', $waybill->id)
+            ->assertJsonPath('items.0.vehicle.id', $tractor->id);
     }
 
     public function test_create_form_prefills_the_coupled_trailer_and_marks_busy_options(): void

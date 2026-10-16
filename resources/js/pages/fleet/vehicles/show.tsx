@@ -4,15 +4,11 @@ import {
     Archive,
     ArchiveRestore,
     ArrowRightLeft,
-    ClipboardList,
     FileText,
     Gauge,
     Info,
-    Link2,
     Pencil,
     Radio,
-    Unlink,
-    Wrench,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -21,66 +17,38 @@ import { useEffect, useRef, useState } from 'react';
 import { useConfirm } from '@/components/confirm-dialog';
 import { SubjectDocuments } from '@/components/documents/subject-documents';
 import {
-    CoupleSheet,
     OdometerSheet,
     StatusSheet,
-    UncoupleSheet,
 } from '@/components/fleet/vehicle-action-sheets';
-import type { VehicleAction } from '@/components/fleet/vehicle-action-sheets';
-import { VehicleActivityLog } from '@/components/fleet/vehicle-activity-log';
 import { VehicleStatusBadge } from '@/components/fleet/vehicle-status-badge';
-import { VehicleTimeline } from '@/components/fleet/vehicle-timeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
-import { WaybillList } from '@/components/waybills/waybill-list';
 import { useFormat } from '@/lib/format';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import vehicles from '@/routes/vehicles';
-import vehicleWaybills from '@/routes/vehicles/waybills';
-import waybillRoutes from '@/routes/waybills';
 import type { DocumentSummary } from '@/types/documents';
-import type {
-    ActiveCoupling,
-    CouplingCandidate,
-    LastReading,
-    OpenWaybill,
-    VehicleCan,
-    VehicleDetail,
-} from '@/types/fleet';
+import type { LastReading, VehicleCan, VehicleDetail } from '@/types/fleet';
 
 type Props = {
     vehicle: VehicleDetail;
-    activeCouplings: ActiveCoupling[];
     lastReading: LastReading | null;
     staleOdometerDays: number;
-    couplingCandidates: CouplingCandidate[];
     statuses: string[];
     documentSummary: DocumentSummary | null;
-    openWaybill: OpenWaybill | null;
     can: VehicleCan;
 };
 
-const TABS = [
-    'overview',
-    'documents',
-    'waybills',
-    'history',
-    'maintenance',
-    'log',
-] as const;
+type SheetAction = 'status' | 'odometer';
+
+const TABS = ['overview', 'documents'] as const;
 
 type Tab = (typeof TABS)[number];
 
 const TAB_LABELS: Record<Tab, string> = {
     overview: 'Overview',
     documents: 'Documents',
-    waybills: 'Waybills',
-    history: 'Operations history',
-    maintenance: 'Maintenance',
-    log: 'Change log',
 };
 
 function initialTab(): Tab {
@@ -94,13 +62,11 @@ function initialTab(): Tab {
 }
 
 export default function VehiclesShow(props: Props) {
-    const { vehicle, can, activeCouplings } = props;
+    const { vehicle, can } = props;
     const { t } = useT();
     const confirm = useConfirm();
     const [tab, setTab] = useState<Tab>(initialTab);
-    const [action, setAction] = useState<VehicleAction | null>(null);
-    const [uncoupling, setUncoupling] = useState<ActiveCoupling | null>(null);
-    const [refreshKey, setRefreshKey] = useState(0);
+    const [action, setAction] = useState<SheetAction | null>(null);
     const tabListRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -122,10 +88,7 @@ export default function VehiclesShow(props: Props) {
     }, [tab]);
 
     const tabs = TABS.filter(
-        (key) =>
-            (key !== 'log' || can.view_audit) &&
-            (key !== 'documents' || can.view_documents) &&
-            (key !== 'waybills' || can.view_waybills),
+        (key) => key !== 'documents' || can.view_documents,
     );
 
     function selectTab(next: Tab) {
@@ -144,8 +107,6 @@ export default function VehiclesShow(props: Props) {
 
     function done() {
         setAction(null);
-        setUncoupling(null);
-        setRefreshKey((value) => value + 1);
     }
 
     async function archive() {
@@ -170,27 +131,6 @@ export default function VehiclesShow(props: Props) {
         onClick?: () => void;
         href?: string;
     }[] = [
-        ...(props.openWaybill
-            ? [
-                  {
-                      key: 'waybill',
-                      label: t('Waybill'),
-                      icon: ClipboardList,
-                      href: waybillRoutes.show.url(props.openWaybill.id),
-                  },
-              ]
-            : can.create_waybill
-              ? [
-                    {
-                        key: 'waybill',
-                        label: t('New waybill'),
-                        icon: ClipboardList,
-                        href: waybillRoutes.create.url({
-                            query: { vehicle_id: vehicle.id },
-                        }),
-                    },
-                ]
-              : []),
         ...(can.change_status
             ? [
                   {
@@ -208,16 +148,6 @@ export default function VehiclesShow(props: Props) {
                       label: t('Mileage'),
                       icon: Gauge,
                       onClick: () => setAction('odometer'),
-                  },
-              ]
-            : []),
-        ...(can.couple && vehicle.type.can_tow
-            ? [
-                  {
-                      key: 'couple',
-                      label: t('Couple'),
-                      icon: Link2,
-                      onClick: () => setAction('couple'),
                   },
               ]
             : []),
@@ -259,24 +189,6 @@ export default function VehiclesShow(props: Props) {
                             .filter(Boolean)
                             .join(' · ')}
                     </p>
-                    {activeCouplings.length > 0 && (
-                        <p className="flex flex-wrap items-center gap-2 text-sm">
-                            <Link2 className="size-4 text-muted-foreground" />
-                            {activeCouplings.map((coupling) =>
-                                coupling.partner ? (
-                                    <Link
-                                        key={coupling.id}
-                                        href={vehicles.show(
-                                            coupling.partner.id,
-                                        )}
-                                        className="-my-3 inline-flex min-h-11 items-center font-mono font-medium underline-offset-4 hover:underline md:my-0 md:min-h-0"
-                                    >
-                                        {coupling.partner.plate_number}
-                                    </Link>
-                                ) : null,
-                            )}
-                        </p>
-                    )}
                 </header>
 
                 <Warnings
@@ -348,11 +260,7 @@ export default function VehiclesShow(props: Props) {
                     aria-labelledby={`vehicle-tab-${tab}`}
                 >
                     {tab === 'overview' && (
-                        <Overview
-                            {...props}
-                            onUncouple={setUncoupling}
-                            onArchive={archive}
-                        />
+                        <Overview {...props} onArchive={archive} />
                     )}
                     {tab === 'documents' && can.view_documents && (
                         <SubjectDocuments
@@ -367,37 +275,6 @@ export default function VehiclesShow(props: Props) {
                                 attach:
                                     can.create_document || can.update_document,
                             }}
-                        />
-                    )}
-                    {tab === 'waybills' && can.view_waybills && (
-                        <WaybillList
-                            url={vehicleWaybills.index.url(vehicle.id)}
-                            hide="vehicle"
-                            createUrl={
-                                can.create_waybill && !props.openWaybill
-                                    ? waybillRoutes.create.url({
-                                          query: { vehicle_id: vehicle.id },
-                                      })
-                                    : null
-                            }
-                            fullListUrl={waybillRoutes.index.url({
-                                query: { search: vehicle.plate_number },
-                            })}
-                        />
-                    )}
-                    {tab === 'history' && (
-                        <VehicleTimeline
-                            vehicleId={vehicle.id}
-                            refreshKey={refreshKey}
-                        />
-                    )}
-                    {tab === 'maintenance' && (
-                        <ComingSoon icon={Wrench} stage={7} />
-                    )}
-                    {tab === 'log' && can.view_audit && (
-                        <VehicleActivityLog
-                            vehicleId={vehicle.id}
-                            refreshKey={refreshKey}
                         />
                     )}
                 </div>
@@ -420,23 +297,6 @@ export default function VehiclesShow(props: Props) {
                     vehicle={vehicle}
                 />
             )}
-            {can.couple && vehicle.type.can_tow && (
-                <CoupleSheet
-                    open={action === 'couple'}
-                    onClose={() => setAction(null)}
-                    onDone={done}
-                    vehicle={vehicle}
-                    candidates={props.couplingCandidates}
-                />
-            )}
-            {can.couple && (
-                <UncoupleSheet
-                    coupling={uncoupling}
-                    onClose={() => setUncoupling(null)}
-                    onDone={done}
-                    vehicle={vehicle}
-                />
-            )}
         </>
     );
 }
@@ -447,7 +307,6 @@ function Warnings({
     staleOdometerDays,
     lastReading,
     documentSummary,
-    openWaybill,
     onRecord,
     onDocuments,
 }: Props & { onRecord: () => void; onDocuments: () => void }) {
@@ -469,29 +328,6 @@ function Warnings({
                 {
                     date: format.dayOf(vehicle.deleted_at),
                 },
-            ),
-        });
-    }
-
-    if (openWaybill) {
-        const text = t('On a trip: waybill :number, driver :driver', {
-            number: openWaybill.number ?? '',
-            driver: openWaybill.driver,
-        });
-
-        items.push({
-            key: 'waybill',
-            tone: openWaybill.overdue ? 'danger' : 'info',
-            text: openWaybill.overdue
-                ? `${text}. ${t('Planned return time has passed.')}`
-                : text,
-            action: (
-                <Button size="sm" variant="outline" asChild>
-                    <Link href={waybillRoutes.show.url(openWaybill.id)}>
-                        <ClipboardList />
-                        {t('Open')}
-                    </Link>
-                </Button>
             ),
         });
     }
@@ -661,27 +497,12 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
-function ComingSoon({ icon, stage }: { icon: LucideIcon; stage: number }) {
-    const { t } = useT();
-
-    return (
-        <EmptyState
-            icon={icon}
-            title={t('Coming')}
-            description={t('Available in stage :stage.', { stage })}
-        />
-    );
-}
-
 function Overview({
     vehicle,
     can,
-    activeCouplings,
     lastReading,
-    onUncouple,
     onArchive,
 }: Props & {
-    onUncouple: (coupling: ActiveCoupling) => void;
     onArchive: () => void;
 }) {
     const { t, label } = useT();
@@ -783,63 +604,6 @@ function Overview({
                                 'Trailers and semitrailers have no odometer; their mileage is derived from couplings.',
                             )}
                         </p>
-                    )}
-                </Section>
-
-                <Section title={t('Current coupling')}>
-                    {activeCouplings.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                            {t('Not coupled')}
-                        </p>
-                    ) : (
-                        <ul className="flex flex-col gap-3">
-                            {activeCouplings.map((coupling) => (
-                                <li
-                                    key={coupling.id}
-                                    className="flex flex-col gap-2"
-                                >
-                                    <div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {coupling.role === 'tractor'
-                                                ? t('Trailer')
-                                                : t('Tractor')}
-                                        </div>
-                                        {coupling.partner && (
-                                            <Link
-                                                href={vehicles.show(
-                                                    coupling.partner.id,
-                                                )}
-                                                className="-my-3 inline-flex min-h-11 items-center font-mono font-semibold underline-offset-4 hover:underline md:my-0 md:min-h-0"
-                                            >
-                                                {coupling.partner.plate_number}
-                                            </Link>
-                                        )}{' '}
-                                        <span className="text-sm text-muted-foreground">
-                                            {coupling.partner?.name}
-                                        </span>
-                                        <div className="text-xs text-muted-foreground">
-                                            {t('since')}{' '}
-                                            {format.dateTime(
-                                                coupling.coupled_at,
-                                            )}
-                                            {coupling.coupled_by &&
-                                                ` · ${coupling.coupled_by}`}
-                                        </div>
-                                    </div>
-                                    {can.couple && (
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="self-start"
-                                            onClick={() => onUncouple(coupling)}
-                                        >
-                                            <Unlink />
-                                            {t('Uncouple')}
-                                        </Button>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
                     )}
                 </Section>
 
